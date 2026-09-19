@@ -14,9 +14,10 @@ import dev.nelson.ridewatch.core.*;
 import java.util.*;
 
 public final class MainActivity extends Activity {
-  private TextView headline, detail, targets, battery;
+  private TextView headline, detail, battery;
+  private RadarView radar;
+  private Button rideButton;
   private LinearLayout content;
-  private ScrollView scroll;
   private String pendingMode;
   private boolean demo;
   private final Handler handler = new Handler(Looper.getMainLooper());
@@ -29,79 +30,139 @@ public final class MainActivity extends Activity {
   public void onCreate(Bundle saved) {
     super.onCreate(saved);
     prefs = getSharedPreferences("ride", 0);
-    scroll = new ScrollView(this);
-    scroll.setFillViewport(true);
     content = new LinearLayout(this);
     content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(dp(24), dp(20), dp(24), dp(36));
-    scroll.addView(content);
-    setContentView(scroll);
-    scroll.setOnApplyWindowInsetsListener(
+    content.setBackgroundColor(Color.rgb(9, 13, 16));
+    setContentView(content);
+    content.setOnApplyWindowInsetsListener(
         (view, insets) -> {
           var safe =
               insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
           content.setPadding(
-              dp(24) + safe.left, dp(20) + safe.top, dp(24) + safe.right, dp(36) + safe.bottom);
+              safe.left + dp(16), safe.top + dp(8), safe.right + dp(16), safe.bottom + dp(8));
           return insets;
         });
-    text("RIDEWATCH  /  RVR315", 14, LIME);
-    text("Know what’s\ncoming behind.", 32, Color.WHITE).setPadding(0, dp(22), 0, dp(22));
-    headline = text("Radar is off", 26, MUTED);
-    detail = text("Pair your radar, then start a ride or arm motion mode.", 15, MUTED);
-    detail.setPadding(0, dp(10), 0, dp(16));
-    targets = text("", 20, Color.WHITE);
-    targets.setMinHeight(dp(95));
-    battery = text("", 13, MUTED);
-    button("Pair radar / enable nearby reconnect", this::pair);
-    button("Start radar", () -> start("ride"));
-    button("Arm motion · above 4 mph", () -> start("motion"));
-    button(
-        "Stop monitoring",
-        () -> {
-          demo = false;
-          handler.removeCallbacksAndMessages(null);
-          prefs.edit().putBoolean("enabled", false).apply();
-          stopService(new Intent(this, RadarService.class));
-          headline.setText("Radar is off");
-          headline.setTextColor(MUTED);
-          detail.setText("Monitoring stopped");
-          targets.setText("");
+    text("RIDEWATCH", 16, Color.WHITE).setLetterSpacing(.16f);
+    battery = text("RVR315  ·  OFFLINE", 12, MUTED);
+    battery.setPadding(0, dp(4), 0, dp(10));
+    headline = text("Radar is off", 24, MUTED);
+    headline.setPadding(dp(12), dp(10), dp(12), dp(10));
+    headline.setBackgroundColor(Color.rgb(27, 35, 40));
+    radar = new RadarView(this);
+    content.addView(radar, new LinearLayout.LayoutParams(-1, 0, 1));
+    detail = text("Pair your radar in Controls to get started.", 13, MUTED);
+    detail.setMaxLines(3);
+    detail.setPadding(0, dp(6), 0, dp(6));
+    LinearLayout actions = new LinearLayout(this);
+    rideButton = new Button(this);
+    rideButton.setText(prefs.getBoolean("enabled", false) ? "Stop ride" : "Start ride");
+    rideButton.setAllCaps(false);
+    rideButton.setMinHeight(dp(52));
+    rideButton.setOnClickListener(
+        v -> {
+          if (demo || prefs.getBoolean("enabled", false)) stopRide();
+          else start("ride");
         });
-    Switch speech = new Switch(this);
-    speech.setText("Spoken vehicle alerts");
-    speech.setChecked(prefs.getBoolean("speech", true));
-    speech.setPadding(0, dp(20), 0, dp(12));
-    content.addView(speech);
-    speech.setOnCheckedChangeListener(
-        (button, value) -> prefs.edit().putBoolean("speech", value).apply());
-    Switch speed = new Switch(this);
-    speed.setText("Speak radar speed · experimental");
-    speed.setChecked(prefs.getBoolean("speed", false));
-    content.addView(speed);
-    speed.setOnCheckedChangeListener(
-        (button, value) -> prefs.edit().putBoolean("speed", value).apply());
-    text(
-            "Speed units come from Garmin’s app parser. Closing speed and accuracy still need"
-                + " RVR315 validation.",
-            13,
-            MUTED)
-        .setPadding(0, dp(10), 0, dp(24));
-    text("Ride together", 23, Color.WHITE);
-    text(
-        "Share the host’s radar over the same Wi-Fi or hotspot. Distances are relative to the host"
-            + " rider.",
-        14,
-        MUTED);
-    button("Host a group", this::hostGroup);
-    button("Join a group", this::joinGroup);
-    button("Preview a simulated approach", this::preview);
-    text(
-            "Motion mode uses GPS while armed and may use significant battery. Nearby reconnect"
-                + " needs companion association. After force-stop, reopen RideWatch."
-                + " This prototype has not been tested with a physical radar.",
-            13,
-            MUTED)
-        .setPadding(0, dp(22), 0, 0);
+    actions.addView(rideButton, new LinearLayout.LayoutParams(0, -2, 1));
+    Button settings = new Button(this);
+    settings.setText("Controls");
+    settings.setAllCaps(false);
+    settings.setMinHeight(dp(52));
+    settings.setOnClickListener(v -> controls());
+    actions.addView(settings, new LinearLayout.LayoutParams(0, -2, 1));
+    content.addView(actions);
+    if (getResources().getConfiguration().orientation
+        == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+      content.removeView(radar);
+      content.addView(new View(this), 3, new LinearLayout.LayoutParams(-1, 0, 1));
+      content.setOnApplyWindowInsetsListener(null);
+      content.setPadding(0, 0, dp(24), 0);
+      LinearLayout wide = new LinearLayout(this);
+      wide.setBackgroundColor(Color.rgb(9, 13, 16));
+      ((ViewGroup) content.getParent()).removeView(content);
+      wide.addView(content, new LinearLayout.LayoutParams(0, -1, 1));
+      wide.addView(radar, new LinearLayout.LayoutParams(0, -1, 1));
+      setContentView(wide);
+      wide.setOnApplyWindowInsetsListener(
+          (view, insets) -> {
+            var safe =
+                insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            wide.setPadding(
+                safe.left + dp(16), safe.top + dp(8), safe.right + dp(16), safe.bottom + dp(8));
+            return insets;
+          });
+    }
+  }
+
+  private void stopRide() {
+    demo = false;
+    handler.removeCallbacksAndMessages(null);
+    prefs.edit().putBoolean("enabled", false).apply();
+    stopService(new Intent(this, RadarService.class));
+    render("Radar is off", "Monitoring stopped", "DISCONNECTED", 0, new int[0], new int[0], false);
+    rideButton.setText("Start ride");
+    battery.setText("RVR315  ·  OFFLINE");
+  }
+
+  private void controls() {
+    new AlertDialog.Builder(this)
+        .setTitle("Ride controls")
+        .setItems(
+            new String[] {
+              "Pair radar / nearby reconnect",
+              "Arm motion · above 4 mph",
+              "Spoken alerts",
+              "Host a group",
+              "Join a group",
+              "Preview radar display"
+            },
+            (dialog, which) -> {
+              switch (which) {
+                case 0 -> pair();
+                case 1 -> start("motion");
+                case 2 -> speechSettings();
+                case 3 -> hostGroup();
+                case 4 -> joinGroup();
+                case 5 -> preview();
+              }
+            })
+        .setNegativeButton("Close", null)
+        .show();
+  }
+
+  private void speechSettings() {
+    new AlertDialog.Builder(this)
+        .setTitle("Spoken alerts")
+        .setMultiChoiceItems(
+            new String[] {"Vehicle alerts", "Radar speed · experimental"},
+            new boolean[] {prefs.getBoolean("speech", true), prefs.getBoolean("speed", false)},
+            (dialog, which, checked) ->
+                prefs.edit().putBoolean(which == 0 ? "speech" : "speed", checked).apply())
+        .setPositiveButton("Done", null)
+        .show();
+  }
+
+  private void render(
+      String title,
+      String message,
+      String health,
+      int threat,
+      int[] meters,
+      int[] threats,
+      boolean group) {
+    int color =
+        !"LIVE".equals(health)
+            ? MUTED
+            : threat == 2
+                ? Color.rgb(255, 104, 94)
+                : meters.length > 0 ? Color.rgb(255, 196, 85) : LIME;
+    headline.setText(title);
+    headline.setTextColor("LIVE".equals(health) ? INK : color);
+    headline.setBackgroundColor("LIVE".equals(health) ? color : Color.rgb(27, 35, 40));
+    detail.setText(message);
+    radar.update(health, meters, threats, color, group, demo);
+    radar.setKeepScreenOn(demo || "LIVE".equals(health));
   }
 
   private int dp(int value) {
@@ -117,35 +178,27 @@ public final class MainActivity extends Activity {
     return view;
   }
 
-  private void button(String label, Runnable action) {
-    Button button = new Button(this);
-    button.setText(label);
-    button.setAllCaps(false);
-    button.setMinHeight(dp(52));
-    button.setOnClickListener(view -> action.run());
-    content.addView(button, new LinearLayout.LayoutParams(-1, -2));
-  }
-
   private final BroadcastReceiver receiver =
       new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
           if (demo) return;
-          headline.setText(
-              (intent.getBooleanExtra("group", false) ? "Group · " : "")
-                  + intent.getStringExtra("title"));
-          String health = intent.getStringExtra("health");
-          int threat = intent.getIntExtra("threat", 0);
-          headline.setTextColor(
-              !"LIVE".equals(health)
-                  ? MUTED
-                  : threat == 2
-                      ? Color.rgb(255, 121, 98)
-                      : threat == 1 ? Color.rgb(255, 207, 107) : LIME);
-          detail.setText(intent.getStringExtra("detail"));
-          targets.setText(intent.getStringExtra("targets"));
+          boolean group = intent.getBooleanExtra("group", false);
+          int[] meters = intent.getIntArrayExtra("meters");
+          int[] threats = intent.getIntArrayExtra("threats");
+          render(
+              intent.getStringExtra("title"),
+              intent.getStringExtra("detail"),
+              intent.getStringExtra("health"),
+              intent.getIntExtra("threat", 0),
+              meters == null ? new int[0] : meters,
+              threats == null ? new int[0] : threats,
+              group);
           int level = intent.getIntExtra("battery", -1);
-          battery.setText(level < 0 ? "" : "Radar battery · " + level + "% at connection");
+          battery.setText(
+              (group ? "GROUP · HOST RADAR" : "RVR315")
+                  + (level < 0 ? "" : "  ·  " + level + "% at connection"));
+          rideButton.setText(prefs.getBoolean("enabled", false) ? "Stop ride" : "Start ride");
         }
       };
 
@@ -165,6 +218,15 @@ public final class MainActivity extends Activity {
   private void start(String mode) {
     demo = false;
     handler.removeCallbacksAndMessages(null);
+    render(
+        "Starting radar",
+        "Waiting for connection",
+        "WAITING",
+        0,
+        new int[0],
+        new int[0],
+        "join".equals(mode));
+    battery.setText("RVR315 · CONNECTING");
     pendingMode = mode;
     ArrayList<String> needed = new ArrayList<>();
     needed.add(Manifest.permission.BLUETOOTH_SCAN);
@@ -354,44 +416,49 @@ public final class MainActivity extends Activity {
       return;
     }
     demo = true;
-    scroll.smoothScrollTo(0, 0);
+    rideButton.setText("End preview");
     handler.removeCallbacksAndMessages(null);
-    headline.setText("SIMULATION · vehicle behind");
-    headline.setTextColor(Color.rgb(255, 207, 107));
-    detail.setText("Synthetic packets through the same decoder · no radar connected");
-    battery.setText("");
-    for (int i = 0; i < 7; i++) {
+    battery.setText("SIMULATION  ·  NO RADAR CONNECTED");
+    for (int i = 0; i < 14; i++) {
       final int step = i;
       handler.postDelayed(
           () -> {
             if (!demo) return;
+            int distance = 112 - step * 8;
             var frame =
                 new LegacyDecoder()
                     .decode(
                         new byte[] {
                           (byte) ((step << 4) | 2),
-                          (byte) (step < 4 ? 0x81 : 0xc1),
-                          (byte) (100 - step * 14),
+                          (byte) (step < 8 ? 0x81 : 0xc1),
+                          (byte) distance,
                           80
                         });
             var target = frame.targets.get(0);
-            targets.setText(target.meters() + " m behind\n45 mph radar speed");
-            if (step >= 4) {
-              headline.setText("SIMULATION · fast approach");
-              headline.setTextColor(Color.rgb(255, 121, 98));
-            }
+            render(
+                step < 8 ? "Vehicles approaching" : "Fast approach",
+                "Simulated vehicles · distances behind you",
+                "LIVE",
+                target.threat(),
+                new int[] {target.meters(), Math.min(150, distance + 38)},
+                new int[] {target.threat(), 1},
+                false);
           },
           i * 1000L);
     }
     handler.postDelayed(
         () -> {
-          if (demo) {
-            headline.setText("SIMULATION · data lost");
-            headline.setTextColor(MUTED);
-            targets.setText("Stream expired. Silence is not an all-clear.");
-          }
+          if (demo)
+            render(
+                "Radar data lost",
+                "Preview ended · a lost stream is not an all-clear.",
+                "STALE",
+                0,
+                new int[0],
+                new int[0],
+                false);
         },
-        8500);
+        15000);
   }
 
   @Override

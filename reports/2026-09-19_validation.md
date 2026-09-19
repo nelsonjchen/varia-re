@@ -61,3 +61,10 @@ The user subsequently authorized Pixel 10 as minimum. v0.2 requires Android 16/A
 been run on-device. The API-30 runtime checks above apply only to v0.1. See
 [Pixel 10 baseline report](2026-09-19_pixel10_baseline.md) for current APK hash and
 platform changes.
+
+## v0.3 graphical screen
+
+Current API36 build now has Android-16 emulator visual checks. Canonical tests,
+assembly and lint pass. Checked preview approaches, fast threat, stale, offline,
+Controls and portrait/landscape; see [design QA](../design-qa.md). These remain
+synthetic tests without an RVR315, physical Pixel 10, or two-phone group capture.

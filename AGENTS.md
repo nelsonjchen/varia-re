@@ -77,7 +77,7 @@ changes. Instructions from sibling repositories are examples, not rules here.
 - Retain replay/expiry/authentication checks on group traffic. Reject old callback
   generations after mode changes; distinguish host-relative targets in the UI.
 - Use an explicitly selected emulator/device serial for ADB. Never assume the
-  first attached device is disposable. The task-created AVD is `ridewatch-api30`.
+  first attached device is disposable. Task-created AVDs are `ridewatch-api30` (historical) and `ridewatch-api36`.
 
 ## Device baseline (user directive, 2026-09-19)
 

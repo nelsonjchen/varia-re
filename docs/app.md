@@ -21,12 +21,28 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`. This is debug-signed for lo
 sideloading, not a Play Store/release build. Install with Android's package installer
 or `adb -s <device> install -r app/build/outputs/apk/debug/app-debug.apk`.
 
+## Graphical radar screen (v0.3)
+
+Cars move up a distance lane toward the fixed rider icon as reported range falls.
+The banner/edge rails turn amber for detections and red for fast approaches.
+A fresh stream with no targets is green; disconnected/stale/error states are gray
+and clear the vehicle icons. Horizontal placement does not encode traffic lanes.
+The nearest distance and total target count remain visible; overlapping detections
+can share a marker position, so the count is authoritative. Group distances refer
+to the host rider, labeled HOST. Portrait and landscape have separate layouts.
+
+Use **Start ride / Stop ride** on the main screen. **Controls** contains pairing,
+motion arming, spoken-alert switches, group hosting/joining and **Preview radar
+display**. The preview is explicitly marked SIMULATION and ends with data loss.
+Live radar and preview keep the screen awake while the Activity is visible.
+Speech settings still persist and numeric radar-speed speech remains experimental.
+
 ## Modes
 
 - **Pair radar / enable nearby reconnect:** Android companion-device chooser,
   filtered by radar service UUID. Saves the selected address and requests Android 16 association-ID device-presence observation. This is app association, not a firmware
   modification or a promise of an encrypted Bluetooth bond.
-- **Start radar:** foreground BLE service; saved-address connection or filtered
+- **Start ride:** foreground BLE service; saved-address connection or filtered
   discovery, subscription, standard battery read, retries up to 30 seconds apart.
   A 15-second missing-notification watchdog reconnects. The UI already marks data
   stale at 2 seconds. Battery is a one-time connection reading.
@@ -60,7 +76,7 @@ presence trigger, not proof of motion.
 After reboot the app posts a resume reminder if monitoring was enabled. It does
 not silently start GPS at boot. Denied notification permission means no visible
 reminder. Android 16 companion presence and foreground restrictions need tests on the Pixel
-10. The earlier API-30 emulator checks cover v0.1 only, not this v0.2 APK.
+10. The earlier API-30 emulator checks cover v0.1 only, not current builds. v0.3 has Android-16 emulator UI checks, not physical BLE checks.
 If upgrading from v0.1, use Pair radar again to register association-ID observation.
 
 The app distinguishes disconnected, awaiting data, live, stale, and radar error.

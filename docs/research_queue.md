@@ -16,3 +16,6 @@ First hardware session: record versions, discovery and normal connection, statio
 heartbeats, a controlled pass, disconnect and reconnect. Use stationary setup or
 an observer for labels. Do not conflate task dismissal with force-stop. Keep raw
 captures private; promote only measured claims to hardware-verified status.
+
+Graphical UI v0.3 has API36 emulator evidence in `design-qa.md`. Physical
+RVR315 range/alert/reconnect validation remains the next step.

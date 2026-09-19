@@ -330,6 +330,11 @@ public final class RadarService extends Service {
             .putExtra("title", armed ? "Ready for movement" : headline(snapshot))
             .putExtra("detail", detail)
             .putExtra("targets", targets.toString())
+            .putExtra(
+                "meters", snapshot.targets().stream().mapToInt(RadarFrame.Target::meters).toArray())
+            .putExtra(
+                "threats",
+                snapshot.targets().stream().mapToInt(RadarFrame.Target::threat).toArray())
             .putExtra("health", snapshot.health().name())
             .putExtra("threat", threat)
             .putExtra("battery", battery)
