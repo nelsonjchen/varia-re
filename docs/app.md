@@ -69,8 +69,8 @@ Speech settings still persist and numeric radar-speed speech remains experimenta
   it is not a low-power activity-recognition implementation.
 - **Spoken alerts:** announce new threats/escalation; coalesce targets, throttle
   repeats, flush obsolete speech, and announce loss of a previously live stream.
-  Numeric "radar speed" speech is optional and off by default. No ground-speed
-  estimate or claim that this is validated closing speed.
+  Numeric speech is optional and off by default on fresh installs. v0.7.0 repeats
+  an estimated car road speed every two seconds; see the rider-speed section below.
 - **Host/join:** local Wi-Fi/hotspot group, one radar owner and up to eight peers.
   Host creates a random join code; peers enter host IP and code. UDP port 43157,
   AES-GCM authenticated encryption, bounded packet sizes, session/sequence replay
@@ -129,7 +129,7 @@ with the app. The inspected binaries/reference checkouts stay in ignored folders
 ## Sound (v0.4)
 
 Controls → Sound & speech offers independent **Varia-style tones**, **Spoken
-vehicle alerts**, and **Speak radar speed · experimental** switches. **Test tones**
+vehicle alerts**, and **Repeat estimated car speed** switches. **Test tones**
 plays each generated sound while monitoring is stopped. These are synthesized
 approximations; no original Garmin audio is included. Tones default on and the
 existing speech preference is retained. Tones precede speech; newer events cancel
@@ -169,3 +169,34 @@ preface. Tone still precedes speech when tones are enabled. Experimental speed
 interpretation is unchanged; the settings label retains that qualification.
 Speed speech was enabled on the user's Pixel on request; default remains off
 for other fresh installs. Non-speed speech is also read at the faster rate.
+
+
+## Rider speed and repeating numbers (v0.7.0)
+
+Speed speech now says only the rounded number (still mph, at 1.4× speech rate).
+While targets remain LIVE, it repeats every two seconds using the latest reading.
+With multiple targets it selects highest threat, then nearest distance, then ID;
+it does not combine different vehicles or queue a list of speeds. Empty/stale
+radar stops numeric repetition. Radar-loss warnings remain verbal.
+
+Estimated road speed = radar speed + rider speed. Google Play services Fused
+Location Provider supplies rider speed at a requested one-second high-accuracy
+interval. Precise location permission is requested on local ride/host start;
+denial leaves BLE/tones working. Accept only finite nonnegative speed with
+reported speed accuracy <=1.5 m/s and monotonic age <=3 seconds. Missing/poor
+readings contribute zero rider speed (user preference), so radar-only numbers
+continue. The UI explicitly reports assumed zero or the measured rider speed.
+This fallback underestimates road speed when the rider is actually moving. Google does not guarantee sensor mix or speed
+accuracy; this estimate assumes radar speed is relative closing speed for a
+same-direction vehicle behind. That reference and road accuracy remain unverified.
+
+Location runs in the existing foreground ride service only while speed speech is
+enabled. Pause/destruction removes updates and clears cached speed; background
+monitoring keeps updates. No coordinates are retained or logged by RideWatch,
+no background-location permission, no new wake/motion behavior. Resume after a
+permission change to enable the location foreground service. Group peers do not
+speak estimates because the current wire protocol lacks the radar host's rider
+speed; adding the receiving phone's speed would be incorrect. Group tones remain.
+Controls → Test alerts includes a numeric “35” preview.
+
+See [implementation evidence and validation](../reports/2026-09-19_speed_fusion.md).

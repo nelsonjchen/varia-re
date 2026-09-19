@@ -29,6 +29,8 @@ public final class RadarService extends Service {
   private String lastNotificationText;
   private String detail = "Ready", mode = "ride";
   private LocationManager locations;
+  private RideSpeedLocation rideSpeed;
+  private boolean rideLocationAllowed;
   private GroupLink group;
   private int groupGeneration;
   private RadarTracker.Snapshot remote;
@@ -69,6 +71,7 @@ public final class RadarService extends Service {
     active = true;
     createChannel(this);
     audio = new RadarAudio(this);
+    rideSpeed = new RideSpeedLocation(this);
     vibration = new RadarVibration(this);
     ble =
         new BleRadar(
@@ -170,11 +173,25 @@ public final class RadarService extends Service {
     // Presence wake reconnects BLE without attempting a background location FGS.
     armed = "motion".equals(mode) && !"presence".equals(action);
     if ("presence".equals(action) && "motion".equals(mode)) mode = "ride";
+    boolean useRideLocation =
+        !"join".equals(mode)
+            && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     try {
       int types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE;
-      if (armed) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
-      startForeground(
-          1, notification(armed ? "Armed · waiting for movement" : "Connecting radar…"), types);
+      if (armed || useRideLocation) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
+      try {
+        startForeground(
+            1, notification(armed ? "Armed · waiting for movement" : "Connecting radar…"), types);
+      } catch (SecurityException locationDenied) {
+        // A background restart or permission change must not take down radar monitoring.
+        if (!useRideLocation || armed) throw locationDenied;
+        useRideLocation = false;
+        startForeground(
+            1,
+            notification("Connecting radar…"),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+      }
     } catch (RuntimeException error) {
       detail = "Could not start monitoring: " + error.getClass().getSimpleName();
       broadcast(tracker.snapshot(SystemClock.elapsedRealtime()));
@@ -196,6 +213,8 @@ public final class RadarService extends Service {
     vibration.cancel();
     motion.reset();
     stopLocation();
+    rideSpeed.stop();
+    rideLocationAllowed = useRideLocation;
     if (group != null) {
       group.close();
       group = null;
@@ -277,6 +296,13 @@ public final class RadarService extends Service {
       new Runnable() {
         public void run() {
           long now = SystemClock.elapsedRealtime();
+          var prefs = getSharedPreferences("ride", 0);
+          rideSpeed.setEnabled(
+              rideLocationAllowed
+                  && prefs.getBoolean("speed", false)
+                  && prefs.getBoolean("speech", true)
+                  && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                      == PackageManager.PERMISSION_GRANTED);
           RadarTracker.Snapshot snapshot = tracker.snapshot(now);
           if ("join".equals(mode))
             snapshot =
@@ -286,9 +312,11 @@ public final class RadarService extends Service {
           if (group != null && "host".equals(mode)) group.publish(snapshot);
           String speech =
               alerts.update(
-                  snapshot, now, getSharedPreferences("ride", 0).getBoolean("speed", false));
+                  snapshot,
+                  now,
+                  getSharedPreferences("ride", 0).getBoolean("speed", false),
+                  "join".equals(mode) ? Double.NaN : rideSpeed.at(now));
           var tone = tones.update(snapshot);
-          var prefs = getSharedPreferences("ride", 0);
           if (!prefs.getBoolean("vibration", true)) vibration.cancel();
           else if (tone != null) vibration.play(tone);
           if (speech != null || tone != null)
@@ -336,7 +364,15 @@ public final class RadarService extends Service {
         new Intent(UPDATE)
             .setPackage(getPackageName())
             .putExtra("title", armed ? "Ready for movement" : headline(snapshot))
-            .putExtra("detail", detail)
+            .putExtra(
+                "detail",
+                detail
+                    + (getSharedPreferences("ride", 0).getBoolean("speed", false)
+                        ? "\n"
+                            + ("join".equals(mode)
+                                ? "Car speed unavailable · host speed not shared"
+                                : rideSpeed.description())
+                        : ""))
             .putExtra("targets", targets.toString())
             .putExtra(
                 "meters", snapshot.targets().stream().mapToInt(RadarFrame.Target::meters).toArray())
@@ -356,6 +392,7 @@ public final class RadarService extends Service {
     handler.removeCallbacksAndMessages(null);
     if (ble != null) ble.stop();
     stopLocation();
+    if (rideSpeed != null) rideSpeed.stop();
     if (group != null) group.close();
     if (audio != null) audio.close();
     if (vibration != null) vibration.cancel();

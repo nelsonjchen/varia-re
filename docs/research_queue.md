@@ -27,3 +27,11 @@ testing phase. See `reports/2026-09-19_testing_lifecycle.md`.
 First physical Pixel 10 Pro / Android 17 smoke check passed after v0.6.1 address
 case fix: connected, battery read, live empty stream. Vehicle pass/raw packet
 capture and long-term lifecycle behavior still pending.
+
+### 2026-09-19 implementation update: estimated road-speed speech
+
+v0.7.0 repeats numbers and adds Google fused rider speed; unknown rider speed
+contributes zero per user request. Local Pixel provider/foreground lifecycle
+observed; moving road-speed accuracy remains unvalidated. Group peers need host
+rider speed in the authenticated wire format before speaking road estimates.
+See [speed fusion report](../reports/2026-09-19_speed_fusion.md).

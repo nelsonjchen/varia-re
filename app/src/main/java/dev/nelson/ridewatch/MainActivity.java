@@ -160,7 +160,7 @@ public final class MainActivity extends Activity {
             new String[] {
               "Varia-style tones",
               "Spoken vehicle alerts",
-              "Speak radar speed · experimental",
+              "Repeat estimated car speed",
               "Vibration alerts"
             },
             new boolean[] {
@@ -221,6 +221,15 @@ public final class MainActivity extends Activity {
           });
       panel.addView(button, new LinearLayout.LayoutParams(-1, -2));
     }
+    Button speedTest = new Button(this);
+    speedTest.setText("Spoken number · 35");
+    speedTest.setAllCaps(false);
+    speedTest.setOnClickListener(
+        view -> {
+          testVibration.cancel();
+          testAudio.play(null, "35");
+        });
+    panel.addView(speedTest, new LinearLayout.LayoutParams(-1, -2));
     ScrollView scroller = new ScrollView(this);
     scroller.addView(panel);
     AlertDialog dialog =
@@ -343,13 +352,17 @@ public final class MainActivity extends Activity {
     ArrayList<String> needed = new ArrayList<>();
     needed.add(Manifest.permission.BLUETOOTH_SCAN);
     needed.add(Manifest.permission.BLUETOOTH_CONNECT);
-    if ("motion".equals(mode)) {
+    if (!"join".equals(mode)) {
       needed.add(Manifest.permission.ACCESS_FINE_LOCATION);
       needed.add(Manifest.permission.ACCESS_COARSE_LOCATION);
     }
     needed.add(Manifest.permission.POST_NOTIFICATIONS);
     needed.removeIf(
-        permission -> checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED);
+        permission ->
+            checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+                && !(Manifest.permission.ACCESS_COARSE_LOCATION.equals(permission)
+                    && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED));
     if (!needed.isEmpty()) {
       requestPermissions(needed.toArray(new String[0]), 20);
       return;
@@ -375,7 +388,9 @@ public final class MainActivity extends Activity {
     if (code == 20) {
       for (int i = 0; i < permissions.length; i++)
         if (results[i] != PackageManager.PERMISSION_GRANTED
-            && !Manifest.permission.POST_NOTIFICATIONS.equals(permissions[i])) {
+            && !Manifest.permission.POST_NOTIFICATIONS.equals(permissions[i])
+            && !Manifest.permission.ACCESS_FINE_LOCATION.equals(permissions[i])
+            && !Manifest.permission.ACCESS_COARSE_LOCATION.equals(permissions[i])) {
           detail.setText("Required permission denied. Choose a mode again after granting it.");
           return;
         }
