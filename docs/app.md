@@ -1,7 +1,9 @@
 # RideWatch prototype
 
 Android 16+ (minSdk/targetSdk/compileSdk 36), using the user’s Pixel 10 as baseline. An initial independently written app, based on
-static Varia 5.1.3 analysis. Physical RVR315 behavior is **not yet verified**.
+static Varia 5.1.3 analysis. Physical connection, battery read and a live empty stream were observed with
+the user’s radar on Pixel 10 Pro/Android 17 in v0.6.1. Vehicle range/speed and
+background reliability remain unverified.
 
 ## Current testing behavior — v0.6
 

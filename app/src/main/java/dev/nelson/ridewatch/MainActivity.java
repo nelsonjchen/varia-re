@@ -408,7 +408,8 @@ public final class MainActivity extends Activity {
   private void saveRadar(AssociationInfo association) {
     prefs
         .edit()
-        .putString("radar", association.getDeviceMacAddress().toString())
+        .putString(
+            "radar", BluetoothAddress.canonicalize(association.getDeviceMacAddress().toString()))
         .putInt("association", association.getId())
         .apply();
     // Testing build: save the association without enabling presence wake.

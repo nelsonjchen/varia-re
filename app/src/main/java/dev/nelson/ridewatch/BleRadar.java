@@ -7,6 +7,7 @@ import android.bluetooth.le.*;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.*;
+import dev.nelson.ridewatch.core.BluetoothAddress;
 import java.util.*;
 
 /** One GATT owner; all state transitions serialized onto main looper. */
@@ -66,7 +67,15 @@ final class BleRadar {
   void start(String savedAddress) {
     stop();
     running = true;
-    address = savedAddress;
+    try {
+      address = BluetoothAddress.canonicalize(savedAddress);
+    } catch (IllegalArgumentException error) {
+      running = false;
+      listener.status(error.getMessage());
+      return;
+    }
+    if (address != null && !address.equals(savedAddress))
+      context.getSharedPreferences("ride", 0).edit().putString("radar", address).apply();
     retries = 0;
     attempt();
     handler.postDelayed(watchdog, 5000);
@@ -124,6 +133,7 @@ final class BleRadar {
         handler.postDelayed(timeout, 15000);
       }
     } catch (RuntimeException error) {
+      android.util.Log.e("RideWatchBle", "Bluetooth connection attempt failed", error);
       retry("Bluetooth unavailable: " + error.getClass().getSimpleName());
     }
   }

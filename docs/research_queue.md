@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | R01 | Done, mirror provenance bounded | Acquire and identify APK | 5.1.3/157, verified signature, SHA-256; protocol report |
 | R02 | Initial pass done | Manifest/services/permissions/target SDK | target 35, MonitorDevicesService connectedDevice, START_STICKY |
-| R03 | Initial pass done | Discovery/subscription/reconnect | UUIDs and notification dispatch recovered; own GATT client built |
+| R03 | Static + physical connection smoke check | Discovery/subscription/reconnect | UUIDs and notification dispatch recovered; own GATT client built |
 | R04 | Static done; physical pending | ID, range, threat, speed, heartbeat | APK parser plus raw fallback; synthetic tests; need RVR315 captures |
 | R05 | Runtime pending | Explain user's background termination | Garmin already has foreground service; need actual phone diagnostics |
 | R06 | Prototype built | Activation above 4 mph | GPS accuracy/dwell/gap gate tested; overnight power pending |
@@ -23,3 +23,7 @@ RVR315 range/alert/reconnect validation remains the next step.
 v0.6 testing profile: foreground service retained; persistent Pause/Resume added.
 Motion, presence wake and boot reminders disabled pending the user ending this
 testing phase. See `reports/2026-09-19_testing_lifecycle.md`.
+
+First physical Pixel 10 Pro / Android 17 smoke check passed after v0.6.1 address
+case fix: connected, battery read, live empty stream. Vehicle pass/raw packet
+capture and long-term lifecycle behavior still pending.

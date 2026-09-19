@@ -4,7 +4,7 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.6** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.6.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
   distance, quarter-m/s speed scaling, errors and freshness behavior.
@@ -16,7 +16,8 @@ Updated: 2026-09-19, America/Los_Angeles.
 - Graphical distance lane with bike/car icons, threat banner, nearest distance,
   host-relative group labeling and a Controls panel. [Visual QA](design-qa.md).
 - JVM tests, real UDP socket test, SDK-36 build and lint. Android-16 emulator graphical preview, stale/offline states and responsive
-  layout checked. No physical-device tests. API-30 checks are historical v0.1 only.
+  layout checked. First physical connection/battery/live empty stream verified on Pixel 10 Pro
+  (Android 17) with user’s radar. API-30 checks are historical v0.1 only.
   [Validation and limits](reports/2026-09-19_validation.md).
 - Bootstrap committed as `6617106`; subsequent app/research work follows it.
 
@@ -29,8 +30,9 @@ this testing build. [Lifecycle checks](reports/2026-09-19_testing_lifecycle.md).
 
 ## Evidence boundary
 
-No physical phone or RVR315 tested. Decompiled app evidence is not a hardware
-capture. Speed is labeled "radar speed" pending validation of its reference/sign.
+Physical Pixel 10 Pro/Android 17 connection now observed: battery 84%, live
+empty stream after Bluetooth address fix. No controlled vehicle pass or raw
+packet capture yet. Decompiled app evidence is not a hardware capture. Speed is labeled "radar speed" pending validation of its reference/sign.
 Companion wake and current-Android background survival remain unverified on-device.
 Motion mode and boot reminders are currently disabled for testing.
 Group mode requires the same Wi-Fi/hotspot and synchronized clocks.
