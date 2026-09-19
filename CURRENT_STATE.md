@@ -2,27 +2,30 @@
 
 Updated: 2026-09-19, America/Los_Angeles.
 
-## Completed
+## Delivered
 
-- Initialized Git and research layout with required session journaling.
-- Established RVR315 scope and feature-oriented research queue.
-- Read Garmin RVR315 documentation, public BLE research, and Android background
-  Bluetooth guidance; [initial report](reports/2026-09-19_initial_recon.md).
-- Located Android platform tools at
-  `/Users/nelson/Library/Android/sdk/platform-tools/adb`.
+- Initial Android **RideWatch** app; [build/use guide](docs/app.md).
+- APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
+- Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
+  distance, quarter-m/s speed scaling, errors and freshness behavior.
+  [Provenance and source map](reports/2026-09-19_apk_protocol.md).
+- Standalone BLE service, reconnects, stale/error states, optional TTS speed,
+  motion arming, companion presence integration and encrypted LAN group prototype.
+- JVM tests, real UDP socket test, build, lint and API-30 emulator smoke checks.
+  [Validation and limits](reports/2026-09-19_validation.md).
+- Bootstrap committed as `6617106`; subsequent app/research work follows it.
 
-## Evidence limits / blockers
+## Evidence boundary
 
-- No APK is present in this workspace; bounded Downloads search found none.
-- `adb devices -l` returned no attached devices.
-- No Garmin app decompilation, RVR315 packet capture, or connection test yet.
-- `jadx` and `apktool` were not found on PATH. `uv` is available.
-- Phone model, Android version, installed Varia version, and radar firmware unknown.
+No physical phone or RVR315 tested. Decompiled app evidence is not a hardware
+capture. Speed is labeled "radar speed" pending validation of its reference/sign.
+Companion wake and current-Android background survival remain unverified on-device.
+Motion mode uses continuous GPS while armed; reboot posts a resume reminder.
+Group mode requires the same Wi-Fi/hotspot and synchronized clocks.
 
-## Next step
+## Continue here
 
-Acquire a Varia APK, preferably all installed splits from the user's Android phone
-using [the acquisition workflow](docs/acquisition.md). Hash and identify it before
-analysis. Then inspect the manifest and follow radar UUID references into the GATT
-subscription/parser and service lifecycle. Public mirror listing discovered but
-no binary downloaded or provenance verified. Public 820 findings remain leads only.
+Read `docs/app.md`, the protocol report, and newest journal entry. The next useful
+step is RVR315 capture and lifecycle/power measurements when hardware becomes
+available. Improve diagnostics/low-power wake based on those results, not guesses.
+Raw APK, decompilation, captures, tools and external checkouts remain ignored.

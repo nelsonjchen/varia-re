@@ -1,19 +1,18 @@
 # Research queue
 
-| ID | Status | Question / deliverable | Evidence required |
+| ID | Status | Question / deliverable | Evidence |
 | --- | --- | --- | --- |
-| R01 | Next: input needed | Acquire and identify the Android app | APK/splits, SHA-256, version, certificate, origin |
-| R02 | Pending R01 | Map manifest, services, receivers, permissions, target SDK | Decoded manifest with source references |
-| R03 | Pending R01 | Map RVR315 discovery, pairing, subscriptions, reconnect path | GATT UUIDs and app call graph |
-| R04 | Pending R03 + hardware | Decode target IDs, distance, threat, speed, heartbeat | APK parser plus labeled RVR315 notification captures |
-| R05 | Pending R02 | Explain background disconnect / termination behavior | Service lifecycle plus time-correlated phone diagnostics |
-| R06 | Proposed | Design motion activation above 4 mph | OS permission/lifecycle review and power measurements |
-| R07 | Proposed | Design TTS from available measurements | Verified units, freshness, ID continuity, audio policy |
-| R08 | Proposed | Design joined-phone alert relay | BLE concurrency test; relay latency/loss and stale-state tests |
+| R01 | Done, mirror provenance bounded | Acquire and identify APK | 5.1.3/157, verified signature, SHA-256; protocol report |
+| R02 | Initial pass done | Manifest/services/permissions/target SDK | target 35, MonitorDevicesService connectedDevice, START_STICKY |
+| R03 | Initial pass done | Discovery/subscription/reconnect | UUIDs and notification dispatch recovered; own GATT client built |
+| R04 | Static done; physical pending | ID, range, threat, speed, heartbeat | APK parser plus raw fallback; synthetic tests; need RVR315 captures |
+| R05 | Runtime pending | Explain user's background termination | Garmin already has foreground service; need actual phone diagnostics |
+| R06 | Prototype built | Activation above 4 mph | GPS accuracy/dwell/gap gate tested; overnight power pending |
+| R07 | Prototype built | TTS | New/escalated threats, optional radar speed, queue flush; audio road test pending |
+| R08 | LAN prototype built | Joined-phone alerts | AES-GCM, replay/expiry, two-peer loopback test; physical networking pending |
+| R09 | Next with hardware | Validate current Android lifecycle | Companion wake, screen off, process death, OEM policy, reboot/force-stop |
 
-First hardware session: record versions; capture discovery and a normal connection;
-observe stationary/no targets, one controlled pass, disconnect, and reconnect.
-Record screen-off behavior separately. Keep captures private and use an observer
-or stationary setup for labeled passes. Later test overnight idle, reboot,
-Bluetooth toggling, task dismissal, process death, and explicit force-stop as
-distinct cases. Record results rather than assuming all are the same failure.
+First hardware session: record versions, discovery and normal connection, stationary
+heartbeats, a controlled pass, disconnect and reconnect. Use stationary setup or
+an observer for labels. Do not conflate task dismissal with force-stop. Keep raw
+captures private; promote only measured claims to hardware-verified status.

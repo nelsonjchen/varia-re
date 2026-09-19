@@ -64,3 +64,17 @@ changes. Instructions from sibling repositories are examples, not rules here.
   and distinguish process death, task dismissal, force-stop, reboot, and OEM policy.
 - Keep research bounded; do not build a complete app before the protocol and
   lifecycle questions needed for its features are resolved.
+
+## App continuation
+
+- Read `docs/app.md` and `reports/2026-09-19_apk_protocol.md` before changing the
+  decoder or connection setup. Preserve the distinction between static evidence
+  and physical validation; numeric speed stays experimental until captured.
+- Build with JDK 17, SDK 35, and the checked-in Gradle wrapper. Canonical check:
+  `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug`.
+- Keep the protocol/policy core Android-independent. Use monotonic time for local
+  freshness. Do not allow malformed/diagnostic frames to keep a dead stream live.
+- Retain replay/expiry/authentication checks on group traffic. Reject old callback
+  generations after mode changes; distinguish host-relative targets in the UI.
+- Use an explicitly selected emulator/device serial for ADB. Never assume the
+  first attached device is disposable. The task-created AVD is `ridewatch-api30`.

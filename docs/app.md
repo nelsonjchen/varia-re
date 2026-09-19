@@ -1,0 +1,95 @@
+# RideWatch prototype
+
+Android 9+ (minSdk 28), targetSdk 35. An initial independently written app, based on
+static Varia 5.1.3 analysis. Physical RVR315 behavior is **not yet verified**.
+
+## Build and install
+
+Requires JDK 17 and Android SDK platform 35. Gradle 8.11.1 is pinned by wrapper and
+SHA-256; Android Gradle Plugin 8.9.2 is pinned. On this Mac:
+
+```sh
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+```
+
+Set `sdk.dir` in ignored `local.properties` if the SDK is elsewhere. The wrapper
+fetches dependencies on first run. No Garmin binaries are required to build.
+
+Output: `app/build/outputs/apk/debug/app-debug.apk`. This is debug-signed for local
+sideloading, not a Play Store/release build. Install with Android's package installer
+or `adb -s <device> install -r app/build/outputs/apk/debug/app-debug.apk`.
+
+## Modes
+
+- **Pair radar / enable nearby reconnect:** Android companion-device chooser,
+  filtered by radar service UUID. Saves the selected address and, on Android 12+,
+  requests device-presence observation. This is app association, not a firmware
+  modification or a promise of an encrypted Bluetooth bond.
+- **Start radar:** foreground BLE service; saved-address connection or filtered
+  discovery, subscription, standard battery read, retries up to 30 seconds apart.
+  A 15-second missing-notification watchdog reconnects. The UI already marks data
+  stale at 2 seconds. Battery is a one-time connection reading.
+- **Arm motion:** foreground GPS monitoring, approximately 2-second samples.
+  Require `speed - speedAccuracy > 1.78816 m/s` for at least five seconds, speed
+  accuracy <=1 m/s, recent samples, and gaps <=4 seconds. Once triggered, stop GPS
+  and connect radar. This initial implementation prioritizes explicit behavior;
+  it is not a low-power activity-recognition implementation.
+- **Spoken alerts:** announce new threats/escalation; coalesce targets, throttle
+  repeats, flush obsolete speech, and announce loss of a previously live stream.
+  Numeric "radar speed" speech is optional and off by default. No ground-speed
+  estimate or claim that this is validated closing speed.
+- **Host/join:** local Wi-Fi/hotspot group, one radar owner and up to eight peers.
+  Host creates a random join code; peers enter host IP and code. UDP port 43157,
+  AES-GCM authenticated encryption, bounded packet sizes, session/sequence replay
+  rejection, three-second wire expiry and receive timeout. Keep clocks automatic.
+  Router client isolation/firewall rules can prevent delivery. No cellular relay,
+  account service, group GPS tracking, or internet deployment is included.
+- **Preview:** labeled synthetic approach and loss-of-data sequence. Refuses to
+  replace active monitoring. It is not a real sensor feed.
+
+## Lifecycle behavior and limits
+
+`START_STICKY` requests service restart; it cannot defeat force-stop or all OEM
+battery policies. Device-presence wake is implemented through a companion service
+and only allowed after the user has started/enabled monitoring. Stop disables it.
+Presence wake can reconnect when a previously motion-armed app has died, without
+starting a location service from the background; that is deliberately a radar
+presence trigger, not proof of motion.
+
+After reboot the app posts a resume reminder if monitoring was enabled. It does
+not silently start GPS at boot. Denied notification permission means no visible
+reminder. Android 12+ companion presence and Android 14/15 foreground restrictions
+need tests on physical/current-API devices. The emulator check used API 30.
+
+The app distinguishes disconnected, awaiting data, live, stale, and radar error.
+"No targets detected" means a fresh stream with no currently tracked targets,
+not a guarantee of an empty road. Group targets are relative to the host's radar;
+tracks from multiple radars are not merged. Shared-code holders can send group
+messages; this is a cooperative small-group prototype, not per-user authorization.
+
+## Code map
+
+- `core/`: independent decoder, tracker, speech policy, motion gate, encrypted
+  group packet codec, synthetic tests.
+- `app/`: native Android screen, BLE adapter, foreground service, companion/boot
+  integration, TTS, LAN transport, and real-socket group unit test.
+- `reports/2026-09-19_apk_protocol.md`: input provenance and obfuscated source map.
+
+No proprietary source, assets, APK, or external GPL implementation is distributed
+with the app. The inspected binaries/reference checkouts stay in ignored folders.
+
+## Next physical validation
+
+1. Record phone model/OS, RVR315 firmware, and Garmin version. Close Garmin for the
+   initial one-client test; do not reset the radar.
+2. Select the actual RVR315, verify discovery/subscription and battery, then record
+   labeled notifications. Confirm error frames and numeric speed semantics.
+3. Test screen off, background, range loss/return, radar power cycle, Bluetooth
+   toggling, process death, task dismissal, reboot and explicit force-stop separately.
+4. Test real TTS delivery with music/headphones and multiple approaching targets.
+5. Measure armed overnight battery use; replace continuous GPS with a qualified
+   activity/presence wake strategy if it is too costly.
+6. Test two phones on a hotspot, clocks, packet loss, host stop, wrong join code,
+   background networking, and peer distance. Confirm stale state appears promptly.
