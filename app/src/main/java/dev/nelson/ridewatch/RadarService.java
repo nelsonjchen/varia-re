@@ -294,9 +294,7 @@ public final class RadarService extends Service {
           if (speech != null || tone != null)
             audio.play(
                 prefs.getBoolean("tones", true) ? tone : null,
-                prefs.getBoolean("speech", true) && speech != null
-                    ? ("join".equals(mode) ? "Group radar. " : "") + speech
-                    : null);
+                prefs.getBoolean("speech", true) && speech != null ? speech : null);
           broadcast(snapshot);
           String notificationText = armed ? detail : headline(snapshot);
           if (!Objects.equals(lastNotificationText, notificationText)) {

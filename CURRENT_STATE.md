@@ -4,7 +4,7 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.6.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.6.3** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
   distance, quarter-m/s speed scaling, errors and freshness behavior.
@@ -35,7 +35,8 @@ this testing build. [Lifecycle checks](reports/2026-09-19_testing_lifecycle.md).
 
 Physical Pixel 10 Pro/Android 17 connection now observed: battery 84%, live
 empty stream after Bluetooth address fix. No controlled vehicle pass or raw
-packet capture yet. Decompiled app evidence is not a hardware capture. Speed is labeled "radar speed" pending validation of its reference/sign.
+packet capture yet. Decompiled app evidence is not a hardware capture. Speed remains experimental pending reference/sign validation; spoken output is
+now just “X mph” at 1.4× rate, per user preference.
 Companion wake and current-Android background survival remain unverified on-device.
 Motion mode and boot reminders are currently disabled for testing.
 Group mode requires the same Wi-Fi/hotspot and synchronized clocks.

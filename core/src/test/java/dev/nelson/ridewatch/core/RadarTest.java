@@ -81,7 +81,7 @@ public class RadarTest {
     var high =
         new RadarTracker.Snapshot(
             RadarTracker.Health.LIVE, List.of(new RadarFrame.Target(1, 2, 30, 20)), -1);
-    assertTrue(policy.update(high, 6000, true).contains("45 miles"));
+    assertEquals("45 mph", policy.update(high, 6000, true));
     var stale = new RadarTracker.Snapshot(RadarTracker.Health.STALE, List.of(), -1);
     assertEquals("Radar data lost", policy.update(stale, 8000, false));
     assertNull(policy.update(stale, 9000, false));

@@ -57,6 +57,7 @@ final class RadarAudio implements AutoCloseable {
                       ready = result == TextToSpeech.SUCCESS;
                       if (ready) {
                         ready = tts.setLanguage(Locale.US) >= 0;
+                        tts.setSpeechRate(1.4f);
                         tts.setAudioAttributes(
                             new AudioAttributes.Builder()
                                 .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)

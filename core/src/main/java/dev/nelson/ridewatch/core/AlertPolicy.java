@@ -29,10 +29,8 @@ public final class AlertPolicy {
       return null;
     for (var target : snapshot.targets()) announced.put(target.id(), target.threat());
     lastSpoken = now;
-    String text = candidate.threat() == 2 ? "Fast vehicle behind" : "Vehicle behind";
-    if (speakSpeed)
-      text += ", radar speed " + Math.round(candidate.speedMps() / .44704) + " miles per hour";
-    return text;
+    if (speakSpeed) return Math.round(candidate.speedMps() / .44704) + " mph";
+    return candidate.threat() == 2 ? "Fast vehicle behind" : "Vehicle behind";
   }
 
   public void reset() {

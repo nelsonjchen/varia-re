@@ -162,3 +162,10 @@ alerts (also available from the sound settings) opens a persistent panel with a
 separate replay button for each event. Monitoring must be paused. Tests play the
 selected tone and, if enabled, its vibration pattern; closing/backgrounding the
 panel cancels playback. These are synthetic tests, not simulated radar detection.
+
+
+v0.6.3 speed speech is only “X mph”, at 1.4× TTS rate, with no vehicle/group
+preface. Tone still precedes speech when tones are enabled. Experimental speed
+interpretation is unchanged; the settings label retains that qualification.
+Speed speech was enabled on the user's Pixel on request; default remains off
+for other fresh installs. Non-speed speech is also read at the faster rate.
