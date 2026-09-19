@@ -6,6 +6,7 @@ import android.content.*;
 public final class BootReceiver extends BroadcastReceiver {
   @Override
   public void onReceive(Context context, Intent intent) {
+    if (RadarService.TESTING_LIFECYCLE) return;
     if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
         && context.getSharedPreferences("ride", 0).getBoolean("enabled", false))
       remind(context, "Phone restarted · tap to resume or arm radar");

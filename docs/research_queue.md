@@ -19,3 +19,7 @@ captures private; promote only measured claims to hardware-verified status.
 
 Graphical UI v0.3 has API36 emulator evidence in `design-qa.md`. Physical
 RVR315 range/alert/reconnect validation remains the next step.
+
+v0.6 testing profile: foreground service retained; persistent Pause/Resume added.
+Motion, presence wake and boot reminders disabled pending the user ending this
+testing phase. See `reports/2026-09-19_testing_lifecycle.md`.

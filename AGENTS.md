@@ -88,3 +88,11 @@ changes. Instructions from sibling repositories are examples, not rules here.
   value callbacks and descriptor writes, and non-exported runtime receivers.
 - The historical API-30 emulator checks apply to v0.1 only. The current APK cannot
   install there; do not cite those checks as validation of the Pixel 10 build.
+
+## Temporary testing lifecycle (user directive, 2026-09-19)
+
+Retain RideWatch's foreground service for screen-off/background monitoring.
+Pause must release BLE and stop audio/reconnects, persist across opening the app,
+and only an explicit user start/resume action may clear it. v0.6 disables motion/presence/boot wake
+through TESTING_LIFECYCLE; do not re-enable these during side-by-side testing
+without a new user request. See reports/2026-09-19_testing_lifecycle.md.

@@ -12,6 +12,8 @@ import java.util.*;
 
 public final class RadarService extends Service {
   static volatile boolean active;
+  // Temporary testing profile: foreground sessions only, no external wake triggers.
+  static final boolean TESTING_LIFECYCLE = true;
   static final String UPDATE = "dev.nelson.ridewatch.UPDATE";
   private final Handler handler = new Handler(Looper.getMainLooper());
   private final RadarTracker tracker = new RadarTracker();
@@ -23,6 +25,7 @@ public final class RadarService extends Service {
   private final TonePolicy tones = new TonePolicy();
   private boolean armed, riding;
   private int battery = -1;
+  private String lastNotificationText;
   private String detail = "Ready", mode = "ride";
   private LocationManager locations;
   private GroupLink group;
@@ -131,7 +134,7 @@ public final class RadarService extends Service {
         .setContentIntent(open)
         .setOngoing(true)
         .setOnlyAlertOnce(true)
-        .addAction(new Notification.Action.Builder(null, "Stop", stop).build())
+        .addAction(new Notification.Action.Builder(null, "Pause", stop).build())
         .build();
   }
 
@@ -139,7 +142,17 @@ public final class RadarService extends Service {
   public int onStartCommand(Intent intent, int flags, int startId) {
     String action = intent == null ? "resume" : intent.getAction();
     if ("stop".equals(action)) {
-      getSharedPreferences("ride", 0).edit().putBoolean("enabled", false).apply();
+      getSharedPreferences("ride", 0)
+          .edit()
+          .putBoolean("enabled", false)
+          .putBoolean("paused", true)
+          .apply();
+      getSystemService(NotificationManager.class).cancel(2);
+      stopSelf();
+      return START_NOT_STICKY;
+    }
+    if (getSharedPreferences("ride", 0).getBoolean("paused", false)
+        || (TESTING_LIFECYCLE && "presence".equals(action))) {
       stopSelf();
       return START_NOT_STICKY;
     }
@@ -151,7 +164,7 @@ public final class RadarService extends Service {
         intent == null
             ? getSharedPreferences("ride", 0).getString("mode", "ride")
             : intent.getStringExtra("mode");
-    if (mode == null) mode = "ride";
+    if (mode == null || (TESTING_LIFECYCLE && "motion".equals(mode))) mode = "ride";
     // Presence wake reconnects BLE without attempting a background location FGS.
     armed = "motion".equals(mode) && !"presence".equals(action);
     if ("presence".equals(action) && "motion".equals(mode)) mode = "ride";
@@ -171,6 +184,7 @@ public final class RadarService extends Service {
         .putBoolean("enabled", true)
         .putString("mode", mode)
         .apply();
+    lastNotificationText = null;
     handler.removeCallbacks(tick);
     ble.stop();
     riding = false;
@@ -279,8 +293,11 @@ public final class RadarService extends Service {
                     ? ("join".equals(mode) ? "Group radar. " : "") + speech
                     : null);
           broadcast(snapshot);
-          getSystemService(NotificationManager.class)
-              .notify(1, notification(armed ? detail : headline(snapshot)));
+          String notificationText = armed ? detail : headline(snapshot);
+          if (!Objects.equals(lastNotificationText, notificationText)) {
+            getSystemService(NotificationManager.class).notify(1, notification(notificationText));
+            lastNotificationText = notificationText;
+          }
           handler.postDelayed(this, 500);
         }
       };

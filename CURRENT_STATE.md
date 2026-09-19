@@ -4,7 +4,7 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.5** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.6** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
   distance, quarter-m/s speed scaling, errors and freshness behavior.
@@ -20,12 +20,19 @@ Updated: 2026-09-19, America/Los_Angeles.
   [Validation and limits](reports/2026-09-19_validation.md).
 - Bootstrap committed as `6617106`; subsequent app/research work follows it.
 
+## Current testing lifecycle
+
+Foreground service stays active in background/screen off; Pause stops it and
+releases BLE/audio. Pause persists until Resume. Opening after pairing connects
+unless paused. Motion and companion wake plus boot reminders are disabled for
+this testing build. [Lifecycle checks](reports/2026-09-19_testing_lifecycle.md).
+
 ## Evidence boundary
 
 No physical phone or RVR315 tested. Decompiled app evidence is not a hardware
 capture. Speed is labeled "radar speed" pending validation of its reference/sign.
 Companion wake and current-Android background survival remain unverified on-device.
-Motion mode uses continuous GPS while armed; reboot posts a resume reminder.
+Motion mode and boot reminders are currently disabled for testing.
 Group mode requires the same Wi-Fi/hotspot and synchronized clocks.
 
 ## Continue here

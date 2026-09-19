@@ -7,6 +7,7 @@ import android.content.Intent;
 public final class RadarCompanionService extends CompanionDeviceService {
   @Override
   public void onDevicePresenceEvent(DevicePresenceEvent event) {
+    if (RadarService.TESTING_LIFECYCLE) return;
     if (event.getEvent() != DevicePresenceEvent.EVENT_BLE_APPEARED
         && event.getEvent() != DevicePresenceEvent.EVENT_BT_CONNECTED) return;
     var prefs = getSharedPreferences("ride", 0);

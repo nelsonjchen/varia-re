@@ -3,6 +3,20 @@
 Android 16+ (minSdk/targetSdk/compileSdk 36), using the user’s Pixel 10 as baseline. An initial independently written app, based on
 static Varia 5.1.3 analysis. Physical RVR315 behavior is **not yet verified**.
 
+## Current testing behavior — v0.6
+
+This section overrides the earlier prototype lifecycle/motion descriptions below.
+RideWatch uses its own foreground service and stays running when backgrounded or
+when the screen is off. Pair once; opening the app connects unless paused.
+**Pause** on the screen or notification stops monitoring, audio, reconnects and
+BLE/group connections. **Resume** restarts the last ride/host/join mode. Pausing
+persists when the app is reopened. Use Pause when switching to Garmin for testing.
+Installing RideWatch does not replace Garmin's separate app.
+
+Motion arming, companion wake and boot reminders are temporarily disabled. Normal
+in-session BLE retries and START_STICKY remain. OS force-stop still stops the app.
+This is not a promise of simultaneous RVR315 Bluetooth access by both apps.
+
 ## Build and install
 
 Requires JDK 17 and Android SDK platform 36. Gradle 8.11.1 is pinned by wrapper and

@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
   private Button rideButton;
   private LinearLayout content;
   private String pendingMode;
-  private boolean demo;
+  private boolean demo, autoStartAttempted;
   private final Handler handler = new Handler(Looper.getMainLooper());
   private SharedPreferences prefs;
   private static final int LIME = Color.rgb(210, 239, 108),
@@ -56,13 +56,13 @@ public final class MainActivity extends Activity {
     detail.setPadding(0, dp(6), 0, dp(6));
     LinearLayout actions = new LinearLayout(this);
     rideButton = new Button(this);
-    rideButton.setText(prefs.getBoolean("enabled", false) ? "Stop ride" : "Start ride");
+    rideButton.setText(prefs.getBoolean("enabled", false) ? "Pause" : "Resume");
     rideButton.setAllCaps(false);
     rideButton.setMinHeight(dp(52));
     rideButton.setOnClickListener(
         v -> {
           if (demo || prefs.getBoolean("enabled", false)) stopRide();
-          else start("ride");
+          else start(resumeMode());
         });
     actions.addView(rideButton, new LinearLayout.LayoutParams(0, -2, 1));
     Button settings = new Button(this);
@@ -99,11 +99,30 @@ public final class MainActivity extends Activity {
   private void stopRide() {
     demo = false;
     handler.removeCallbacksAndMessages(null);
-    prefs.edit().putBoolean("enabled", false).apply();
+    pendingMode = null;
+    if (testAudio != null) testAudio.stop();
+    prefs.edit().putBoolean("enabled", false).putBoolean("paused", true).apply();
+    getSystemService(NotificationManager.class).cancel(2);
     stopService(new Intent(this, RadarService.class));
-    render("Radar is off", "Monitoring stopped", "DISCONNECTED", 0, new int[0], new int[0], false);
-    rideButton.setText("Start ride");
-    battery.setText("RVR315  ·  OFFLINE");
+    showPaused();
+  }
+
+  private String resumeMode() {
+    String mode = prefs.getString("mode", "ride");
+    return "motion".equals(mode) ? "ride" : mode;
+  }
+
+  private void showPaused() {
+    render(
+        "Paused",
+        "Radar disconnected · tap Resume when ready",
+        "DISCONNECTED",
+        0,
+        new int[0],
+        new int[0],
+        false);
+    rideButton.setText("Resume");
+    battery.setText("RVR315 · PAUSED");
   }
 
   private void controls() {
@@ -111,8 +130,7 @@ public final class MainActivity extends Activity {
         .setTitle("Ride controls")
         .setItems(
             new String[] {
-              "Pair radar / nearby reconnect",
-              "Arm motion · above 4 mph",
+              "Pair radar",
               "Sound & speech",
               "Host a group",
               "Join a group",
@@ -121,11 +139,10 @@ public final class MainActivity extends Activity {
             (dialog, which) -> {
               switch (which) {
                 case 0 -> pair();
-                case 1 -> start("motion");
-                case 2 -> speechSettings();
-                case 3 -> hostGroup();
-                case 4 -> joinGroup();
-                case 5 -> preview();
+                case 1 -> speechSettings();
+                case 2 -> hostGroup();
+                case 3 -> joinGroup();
+                case 4 -> preview();
               }
             })
         .setNegativeButton("Close", null)
@@ -225,6 +242,10 @@ public final class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
           if (demo) return;
+          if (prefs.getBoolean("paused", false)) {
+            showPaused();
+            return;
+          }
           boolean group = intent.getBooleanExtra("group", false);
           int[] meters = intent.getIntArrayExtra("meters");
           int[] threats = intent.getIntArrayExtra("threats");
@@ -240,7 +261,7 @@ public final class MainActivity extends Activity {
           battery.setText(
               (group ? "GROUP · HOST RADAR" : "RVR315")
                   + (level < 0 ? "" : "  ·  " + level + "% at connection"));
-          rideButton.setText(prefs.getBoolean("enabled", false) ? "Stop ride" : "Start ride");
+          rideButton.setText(prefs.getBoolean("enabled", false) ? "Pause" : "Resume");
         }
       };
 
@@ -249,6 +270,16 @@ public final class MainActivity extends Activity {
     super.onStart();
     registerReceiver(
         receiver, new IntentFilter(RadarService.UPDATE), Context.RECEIVER_NOT_EXPORTED);
+    if (prefs.getBoolean("paused", false)) {
+      if (!demo) showPaused();
+      return;
+    }
+    if (!autoStartAttempted
+        && !RadarService.active
+        && (prefs.contains("radar") || prefs.getBoolean("enabled", false))) {
+      autoStartAttempted = true;
+      start(resumeMode());
+    }
   }
 
   @Override
@@ -290,6 +321,9 @@ public final class MainActivity extends Activity {
   }
 
   private void launch(String mode) {
+    if (mode == null) return;
+    pendingMode = null;
+    prefs.edit().putBoolean("paused", false).apply();
     try {
       startForegroundService(
           new Intent(this, RadarService.class).setAction("start").putExtra("mode", mode));
@@ -377,17 +411,9 @@ public final class MainActivity extends Activity {
         .putString("radar", association.getDeviceMacAddress().toString())
         .putInt("association", association.getId())
         .apply();
-    try {
-      getSystemService(CompanionDeviceManager.class)
-          .startObservingDevicePresence(
-              new ObservingDevicePresenceRequest.Builder()
-                  .setAssociationId(association.getId())
-                  .build());
-    } catch (RuntimeException error) {
-      detail.setText("Radar saved; presence wake unavailable. Try pairing again.");
-      return;
-    }
-    detail.setText("Radar saved. Start monitoring once to enable nearby reconnect.");
+    // Testing build: save the association without enabling presence wake.
+    detail.setText("Radar saved. Resume to connect.");
+    if (!prefs.getBoolean("paused", false)) start("ride");
   }
 
   private void hostGroup() {
