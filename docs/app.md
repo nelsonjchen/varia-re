@@ -124,3 +124,10 @@ can prevent audio. Real Pixel/headphone routing and ducking remain untested.
 Connection, normal approach, fast approach, a fresh stream becoming empty, and
 data loss have distinct sounds. A stale/disconnected stream never plays the
 no-target tone. See [audio research](../reports/2026-09-19_audio.md).
+
+
+v0.5 masters tones for audibility: stronger sustain, soft saturation and peak
+normalization, with full per-stream playback gain. This deliberately trades a
+clean chime timbre for higher average signal level. It does not change the
+phone's volume setting or compress TTS. Physical speaker audibility remains to
+be tested; digital levels alone cannot establish audibility in traffic.

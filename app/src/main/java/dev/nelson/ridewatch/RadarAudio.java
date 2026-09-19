@@ -97,7 +97,7 @@ final class RadarAudio implements AutoCloseable {
     if (tone != null) {
       int id = sounds.get(tone);
       if (loaded.contains(id)) {
-        stream = pool.play(id, .85f, .85f, 1, 0, 1);
+        stream = pool.play(id, 1f, 1f, 1, 0, 1);
         android.util.Log.d("RideWatchAudio", "stream=" + stream);
         if (stream != 0) delay = tone == Tone.URGENT ? 680 : tone == Tone.EMPTY ? 420 : 500;
       }
