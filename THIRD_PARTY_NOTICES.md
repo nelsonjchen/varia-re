@@ -1,6 +1,7 @@
 # Third-party assets
 
-The `ic_car.xml` and `ic_bike.xml` Android vectors contain Google Material Icons
+The `ic_car.xml`, `ic_bike.xml`, and bicycle group in `ic_launcher_foreground.xml`
+Android vectors contain Google Material Icons
 `directions_car` and `directions_bike` path data, converted from SVG to Android
 VectorDrawable without changing the geometry. Copyright Google; Apache License
 2.0, included in `LICENSE-material-icons`.

@@ -4,13 +4,15 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.6.3** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.6.4** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
   distance, quarter-m/s speed scaling, errors and freshness behavior.
   [Provenance and source map](reports/2026-09-19_apk_protocol.md).
 - Standalone BLE service, reconnects, stale/error states, optional TTS speed,
   motion arming, companion presence integration and encrypted LAN group prototype.
+- Adaptive launcher icon: white bicycle/amber radar on navy; separate white
+  notification symbol and themed-icon silhouette.
 - Vibration alerts enabled by default, with individual replay buttons under
   Controls → Test alerts; Android reports approach/urgent/lost vibration
   patterns completed on the physical Pixel. Perceived strength not yet rated.
