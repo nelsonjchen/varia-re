@@ -1,7 +1,7 @@
 # varia-re / RideWatch
 
 Garmin Varia Android interoperability research and an initial standalone Android
-app for the **RVR315**. Includes spoken radar alerts, reconnection, motion arming,
+Kotlin app for the **RVR315**. Includes spoken radar alerts, reconnection, motion arming,
 and a local-network group notification prototype.
 
 ## Start here
@@ -23,9 +23,10 @@ and a local-network group notification prototype.
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
-**Android 16+ / Pixel 10 baseline. Built and unit-tested; not yet run on the Pixel 10.**
-The earlier v0.1 prototype was emulator-tested on Android 11.
-Motion arming currently uses GPS. Group mode uses the same Wi-Fi/hotspot. Background
+**Android 16+ / Pixel 10 baseline.** Previous Java versions connected to the
+physical Pixel 10 Pro / Android 17. The v0.8 Kotlin build has unit-test and API36
+emulator validation; physical update is pending the phone returning to ADB.
+Motion/presence/boot wake are temporarily disabled for side-by-side testing. Group mode uses the same Wi-Fi/hotspot. Background
 survival is subject to Android/OEM policy; this is not an unkillable service.
 
 Proprietary inputs and generated decompilations are local, ignored research

@@ -1,4 +1,4 @@
-plugins { id 'com.android.application' }
+plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
 android {
     namespace 'dev.nelson.ridewatch'
     compileSdk 36
@@ -6,9 +6,11 @@ android {
         applicationId 'dev.nelson.ridewatch'
         minSdk 36
         targetSdk 36
-        versionCode 11
-        versionName '0.7.0'
+        versionCode 12
+        versionName '0.8.0'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies { testImplementation 'junit:junit:4.13.2'; implementation project(':core'); implementation 'com.google.android.gms:play-services-location:21.3.0' }
+
+kotlin { jvmToolchain(17) }

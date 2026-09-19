@@ -35,3 +35,11 @@ contributes zero per user request. Local Pixel provider/foreground lifecycle
 observed; moving road-speed accuracy remains unvalidated. Group peers need host
 rider speed in the authenticated wire format before speaking road estimates.
 See [speed fusion report](../reports/2026-09-19_speed_fusion.md).
+
+### 2026-09-19 implementation update: Kotlin and direct disconnect alerts
+
+v0.8.0 migrates production app/core to Kotlin and announces direct transport loss
+plus last-known battery, independent of stream freshness. 26 tests and API36
+emulator audio/service checks pass. Physical Pixel update and disconnect
+speaker/headphone check pending its return to wireless ADB. See
+[migration/disconnect report](../reports/2026-09-19_kotlin_disconnect.md).

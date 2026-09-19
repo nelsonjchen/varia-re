@@ -96,3 +96,15 @@ Pause must release BLE and stop audio/reconnects, persist across opening the app
 and only an explicit user start/resume action may clear it. v0.6 disables motion/presence/boot wake
 through TESTING_LIFECYCLE; do not re-enable these during side-by-side testing
 without a new user request. See reports/2026-09-19_testing_lifecycle.md.
+
+
+## Kotlin implementation (user directive, 2026-09-19)
+
+- Production app and core code lives under `src/main/kotlin`; use Kotlin for new
+  implementation. Kotlin 2.2.21, AGP8.10.1, Gradle8.11.1, JVM17, SDK36.
+- Existing Java regression tests deliberately remain unchanged as migration
+  oracles; new disconnect tests use Kotlin. Do not mistake these for unconverted
+  production code. Keep Java-compatible core record APIs while those tests remain.
+- Unexpected BLE loss is a direct connection event, independent of stream health.
+  Announce the retained battery once per lost connection, not every retry. Pause
+  and mode changes remain silent and release audio. Never report a guessed battery.

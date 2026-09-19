@@ -200,3 +200,29 @@ speed; adding the receiving phone's speed would be incorrect. Group tones remain
 Controls → Test alerts includes a numeric “35” preview.
 
 See [implementation evidence and validation](../reports/2026-09-19_speed_fusion.md).
+
+
+## Kotlin and disconnect announcements (v0.8.0)
+
+All production app/core code now lives in `src/main/kotlin`, using Kotlin 2.2.21
+with the existing JVM17/SDK36 baseline. The programmatic graphical UI, BLE packet
+format, encrypted group protocol, preferences, Pause lifecycle, and speed speech
+remain compatible. Existing Java tests remain regression oracles; new tests use
+Kotlin. No Compose/coroutine or build-tool migration was bundled into this change.
+
+Unexpected Bluetooth loss now triggers the lost chime directly, even before the
+first measurement, independently of an earlier stale-stream warning. It says
+“Disconnected. Last battery 84 percent” using the last valid reading in that ride
+session. Unknown battery says only “Radar disconnected”; 0% is a valid battery.
+Retries without an intervening connection stay quiet. The last known percentage
+remains on screen. A new session clears it so a different radar cannot inherit it.
+Tones/speech/vibration respect their existing switches. Pause/mode switches are
+intentional shutdowns and remain silent.
+
+Disconnect audio has priority over routine reconnect/numeric sounds until its
+speech finishes. Sound loading and TTS initialization get bounded waits; temporary
+focus denial gets a bounded retry for this event. Android audio-focus loss and
+Pause still cancel playback. Controls → Test alerts includes a clearly labeled
+sample disconnect + 84% battery preview.
+
+[Migration evidence and remaining device check](../reports/2026-09-19_kotlin_disconnect.md).
