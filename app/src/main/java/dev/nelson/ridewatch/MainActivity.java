@@ -38,11 +38,10 @@ public final class MainActivity extends Activity {
     setContentView(scroll);
     scroll.setOnApplyWindowInsetsListener(
         (view, insets) -> {
+          var safe =
+              insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
           content.setPadding(
-              dp(24),
-              dp(20) + insets.getSystemWindowInsetTop(),
-              dp(24),
-              dp(36) + insets.getSystemWindowInsetBottom());
+              dp(24) + safe.left, dp(20) + safe.top, dp(24) + safe.right, dp(36) + safe.bottom);
           return insets;
         });
     text("RIDEWATCH  /  RVR315", 14, LIME);
@@ -98,7 +97,7 @@ public final class MainActivity extends Activity {
     button("Preview a simulated approach", this::preview);
     text(
             "Motion mode uses GPS while armed and may use significant battery. Nearby reconnect"
-                + " needs Android 12+ companion association. After force-stop, reopen RideWatch."
+                + " needs companion association. After force-stop, reopen RideWatch."
                 + " This prototype has not been tested with a physical radar.",
             13,
             MUTED)
@@ -150,18 +149,11 @@ public final class MainActivity extends Activity {
         }
       };
 
-  @android.annotation.SuppressLint(
-      "UnspecifiedRegisterReceiverFlag") // Pre-33 path is guarded and requires our signature
-  // permission.
   @Override
   public void onStart() {
     super.onStart();
-    if (Build.VERSION.SDK_INT >= 33)
-      registerReceiver(
-          receiver, new IntentFilter(RadarService.UPDATE), Context.RECEIVER_NOT_EXPORTED);
-    else
-      registerReceiver(
-          receiver, new IntentFilter(RadarService.UPDATE), getPackageName() + ".INTERNAL", null);
+    registerReceiver(
+        receiver, new IntentFilter(RadarService.UPDATE), Context.RECEIVER_NOT_EXPORTED);
   }
 
   @Override
@@ -175,15 +167,13 @@ public final class MainActivity extends Activity {
     handler.removeCallbacksAndMessages(null);
     pendingMode = mode;
     ArrayList<String> needed = new ArrayList<>();
-    if (Build.VERSION.SDK_INT >= 31) {
-      needed.add(Manifest.permission.BLUETOOTH_SCAN);
-      needed.add(Manifest.permission.BLUETOOTH_CONNECT);
-    }
-    if (Build.VERSION.SDK_INT < 31 || "motion".equals(mode)) {
+    needed.add(Manifest.permission.BLUETOOTH_SCAN);
+    needed.add(Manifest.permission.BLUETOOTH_CONNECT);
+    if ("motion".equals(mode)) {
       needed.add(Manifest.permission.ACCESS_FINE_LOCATION);
       needed.add(Manifest.permission.ACCESS_COARSE_LOCATION);
     }
-    if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS);
+    needed.add(Manifest.permission.POST_NOTIFICATIONS);
     needed.removeIf(
         permission -> checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED);
     if (!needed.isEmpty()) {
@@ -214,15 +204,25 @@ public final class MainActivity extends Activity {
         }
       launch(pendingMode);
     } else if (code == 21) {
-      if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) pair();
+      if (results.length == 0) return;
+      for (int result : results) {
+        if (result != PackageManager.PERMISSION_GRANTED) {
+          detail.setText("Nearby devices permission is needed to pair and reconnect.");
+          return;
+        }
+      }
+      pair();
     }
   }
 
   private void pair() {
-    if (Build.VERSION.SDK_INT >= 31
-        && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            != PackageManager.PERMISSION_GRANTED
+        || checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)
             != PackageManager.PERMISSION_GRANTED) {
-      requestPermissions(new String[] {Manifest.permission.BLUETOOTH_CONNECT}, 21);
+      requestPermissions(
+          new String[] {Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN},
+          21);
       return;
     }
     CompanionDeviceManager manager = getSystemService(CompanionDeviceManager.class);
@@ -236,20 +236,13 @@ public final class MainActivity extends Activity {
     CompanionDeviceManager.Callback callback =
         new CompanionDeviceManager.Callback() {
           @Override
-          public void onDeviceFound(IntentSender chooser) {
-            showChooser(chooser);
-          }
-
-          @Override
           public void onAssociationPending(IntentSender chooser) {
             showChooser(chooser);
           }
 
-          @android.annotation.TargetApi(33)
           @Override
           public void onAssociationCreated(AssociationInfo association) {
-            if (association.getDeviceMacAddress() != null)
-              saveRadar(association.getDeviceMacAddress().toString());
+            if (association.getDeviceMacAddress() != null) saveRadar(association);
           }
 
           @Override
@@ -258,23 +251,9 @@ public final class MainActivity extends Activity {
           }
         };
     try {
-      if (Build.VERSION.SDK_INT >= 33) manager.associate(request, getMainExecutor(), callback);
-      else manager.associate(request, callback, handler);
+      manager.associate(request, getMainExecutor(), callback);
     } catch (RuntimeException error) {
       detail.setText("Pairing unavailable: " + error.getMessage());
-    }
-  }
-
-  @Override
-  protected void onActivityResult(int request, int result, Intent data) {
-    super.onActivityResult(request, result, data);
-    if (request == 10 && result == RESULT_OK && data != null && Build.VERSION.SDK_INT < 33) {
-      ScanResult device = data.getParcelableExtra(CompanionDeviceManager.EXTRA_DEVICE);
-      if (device == null) {
-        detail.setText("No radar selected");
-        return;
-      }
-      saveRadar(device.getDevice().getAddress());
     }
   }
 
@@ -286,15 +265,21 @@ public final class MainActivity extends Activity {
     }
   }
 
-  private void saveRadar(String address) {
-    prefs.edit().putString("radar", address).apply();
-    if (Build.VERSION.SDK_INT >= 31) {
-      try {
-        getSystemService(CompanionDeviceManager.class).startObservingDevicePresence(address);
-      } catch (RuntimeException error) {
-        detail.setText("Radar saved; presence wake unavailable");
-        return;
-      }
+  private void saveRadar(AssociationInfo association) {
+    prefs
+        .edit()
+        .putString("radar", association.getDeviceMacAddress().toString())
+        .putInt("association", association.getId())
+        .apply();
+    try {
+      getSystemService(CompanionDeviceManager.class)
+          .startObservingDevicePresence(
+              new ObservingDevicePresenceRequest.Builder()
+                  .setAssociationId(association.getId())
+                  .build());
+    } catch (RuntimeException error) {
+      detail.setText("Radar saved; presence wake unavailable. Try pairing again.");
+      return;
     }
     detail.setText("Radar saved. Start monitoring once to enable nearby reconnect.");
   }

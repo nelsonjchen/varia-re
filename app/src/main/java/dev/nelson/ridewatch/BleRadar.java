@@ -57,11 +57,10 @@ final class BleRadar {
   }
 
   boolean permissions() {
-    return Build.VERSION.SDK_INT < 31
-        || (context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
-                == PackageManager.PERMISSION_GRANTED
-            && context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)
-                == PackageManager.PERMISSION_GRANTED);
+    return (context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            == PackageManager.PERMISSION_GRANTED
+        && context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)
+            == PackageManager.PERMISSION_GRANTED);
   }
 
   void start(String savedAddress) {
@@ -209,8 +208,9 @@ final class BleRadar {
                   retry("Radar subscription unavailable");
                   return;
                 }
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                if (!client.writeDescriptor(descriptor)) retry("Radar subscription failed");
+                if (client.writeDescriptor(
+                        descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                    != BluetoothStatusCodes.SUCCESS) retry("Radar subscription failed");
               });
         }
 
@@ -238,13 +238,6 @@ final class BleRadar {
 
         @Override
         public void onCharacteristicRead(
-            BluetoothGatt client, BluetoothGattCharacteristic characteristic, int code) {
-          byte[] bytes = characteristic.getValue();
-          if (bytes != null) onCharacteristicRead(client, characteristic, bytes.clone(), code);
-        }
-
-        @Override
-        public void onCharacteristicRead(
             BluetoothGatt client,
             BluetoothGattCharacteristic characteristic,
             byte[] bytes,
@@ -257,13 +250,6 @@ final class BleRadar {
                     && bytes.length > 0
                     && (bytes[0] & 255) <= 100) listener.battery(bytes[0] & 255);
               });
-        }
-
-        @Override
-        public void onCharacteristicChanged(
-            BluetoothGatt client, BluetoothGattCharacteristic characteristic) {
-          byte[] bytes = characteristic.getValue();
-          if (bytes != null) onCharacteristicChanged(client, characteristic, bytes.clone());
         }
 
         @Override

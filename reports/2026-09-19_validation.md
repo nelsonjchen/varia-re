@@ -53,3 +53,11 @@ APK installs and cold-launches on the isolated emulator without AndroidRuntime
 errors. SHA-256: `ac95cbc9e47e42d76147700327894b13eb5995e5cc06adb2439bfa2ee0678147`.
 The checksum is specific to this debug build/signing key, not a reproducible-build
 claim. Gradle distribution checksum is pinned in wrapper properties.
+
+## Superseding v0.2 baseline
+
+The user subsequently authorized Pixel 10 as minimum. v0.2 requires Android 16/API
+36 and removes old compatibility paths. Its build/tests/lint pass, but it has not
+been run on-device. The API-30 runtime checks above apply only to v0.1. See
+[Pixel 10 baseline report](2026-09-19_pixel10_baseline.md) for current APK hash and
+platform changes.

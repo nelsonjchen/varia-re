@@ -10,7 +10,7 @@
 | R06 | Prototype built | Activation above 4 mph | GPS accuracy/dwell/gap gate tested; overnight power pending |
 | R07 | Prototype built | TTS | New/escalated threats, optional radar speed, queue flush; audio road test pending |
 | R08 | LAN prototype built | Joined-phone alerts | AES-GCM, replay/expiry, two-peer loopback test; physical networking pending |
-| R09 | Next with hardware | Validate current Android lifecycle | Companion wake, screen off, process death, OEM policy, reboot/force-stop |
+| R09 | Next with hardware | Validate Pixel 10 / Android 16 lifecycle | Association-ID presence wake, screen off, process death, OEM policy, reboot/force-stop |
 
 First hardware session: record versions, discovery and normal connection, stationary
 heartbeats, a controlled pass, disconnect and reconnect. Use stationary setup or

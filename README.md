@@ -17,13 +17,14 @@ and a local-network group notification prototype.
 - [Artifact policy](artifacts/README.md) and [APK acquisition](docs/acquisition.md)
 
 ```sh
-# JDK 17 and Android SDK 35 required
+# JDK 17 and Android SDK 36 required
 ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
-**Built and emulator-tested; not yet validated with a physical RVR315.**
+**Android 16+ / Pixel 10 baseline. Built and unit-tested; not yet run on the Pixel 10.**
+The earlier v0.1 prototype was emulator-tested on Android 11.
 Motion arming currently uses GPS. Group mode uses the same Wi-Fi/hotspot. Background
 survival is subject to Android/OEM policy; this is not an unkillable service.
 

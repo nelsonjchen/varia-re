@@ -1,12 +1,12 @@
 # RideWatch prototype
 
-Android 9+ (minSdk 28), targetSdk 35. An initial independently written app, based on
+Android 16+ (minSdk/targetSdk/compileSdk 36), using the user’s Pixel 10 as baseline. An initial independently written app, based on
 static Varia 5.1.3 analysis. Physical RVR315 behavior is **not yet verified**.
 
 ## Build and install
 
-Requires JDK 17 and Android SDK platform 35. Gradle 8.11.1 is pinned by wrapper and
-SHA-256; Android Gradle Plugin 8.9.2 is pinned. On this Mac:
+Requires JDK 17 and Android SDK platform 36. Gradle 8.11.1 is pinned by wrapper and
+SHA-256; Android Gradle Plugin 8.10.1 is pinned. On this Mac:
 
 ```sh
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)
@@ -24,8 +24,7 @@ or `adb -s <device> install -r app/build/outputs/apk/debug/app-debug.apk`.
 ## Modes
 
 - **Pair radar / enable nearby reconnect:** Android companion-device chooser,
-  filtered by radar service UUID. Saves the selected address and, on Android 12+,
-  requests device-presence observation. This is app association, not a firmware
+  filtered by radar service UUID. Saves the selected address and requests Android 16 association-ID device-presence observation. This is app association, not a firmware
   modification or a promise of an encrypted Bluetooth bond.
 - **Start radar:** foreground BLE service; saved-address connection or filtered
   discovery, subscription, standard battery read, retries up to 30 seconds apart.
@@ -60,8 +59,9 @@ presence trigger, not proof of motion.
 
 After reboot the app posts a resume reminder if monitoring was enabled. It does
 not silently start GPS at boot. Denied notification permission means no visible
-reminder. Android 12+ companion presence and Android 14/15 foreground restrictions
-need tests on physical/current-API devices. The emulator check used API 30.
+reminder. Android 16 companion presence and foreground restrictions need tests on the Pixel
+10. The earlier API-30 emulator checks cover v0.1 only, not this v0.2 APK.
+If upgrading from v0.1, use Pair radar again to register association-ID observation.
 
 The app distinguishes disconnected, awaiting data, live, stale, and radar error.
 "No targets detected" means a fresh stream with no currently tracked targets,

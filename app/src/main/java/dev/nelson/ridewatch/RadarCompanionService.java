@@ -1,17 +1,20 @@
 package dev.nelson.ridewatch;
 
 import android.companion.CompanionDeviceService;
+import android.companion.DevicePresenceEvent;
 import android.content.Intent;
 
-@android.annotation.TargetApi(31)
 public final class RadarCompanionService extends CompanionDeviceService {
   @Override
-  public void onDeviceAppeared(String address) {
+  public void onDevicePresenceEvent(DevicePresenceEvent event) {
+    if (event.getEvent() != DevicePresenceEvent.EVENT_BLE_APPEARED
+        && event.getEvent() != DevicePresenceEvent.EVENT_BT_CONNECTED) return;
     var prefs = getSharedPreferences("ride", 0);
     if (!RadarService.active
         && !"join".equals(prefs.getString("mode", "ride"))
         && prefs.getBoolean("enabled", false)
-        && address.equals(prefs.getString("radar", ""))) {
+        && event.getAssociationId() >= 0
+        && event.getAssociationId() == prefs.getInt("association", -1)) {
       try {
         startForegroundService(
             new Intent(this, RadarService.class)

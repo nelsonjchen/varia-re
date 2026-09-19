@@ -58,9 +58,6 @@ public final class RadarService extends Service {
 
         @Override
         public void onProviderEnabled(String provider) {}
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {}
       };
 
   @Override
@@ -173,12 +170,10 @@ public final class RadarService extends Service {
     armed = "motion".equals(mode) && !"presence".equals(action);
     if ("presence".equals(action) && "motion".equals(mode)) mode = "ride";
     try {
-      if (Build.VERSION.SDK_INT >= 29) {
-        int types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE;
-        if (armed) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
-        startForeground(
-            1, notification(armed ? "Armed · waiting for movement" : "Connecting radar…"), types);
-      } else startForeground(1, notification("Starting radar…"));
+      int types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE;
+      if (armed) types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
+      startForeground(
+          1, notification(armed ? "Armed · waiting for movement" : "Connecting radar…"), types);
     } catch (RuntimeException error) {
       detail = "Could not start monitoring: " + error.getClass().getSimpleName();
       broadcast(tracker.snapshot(SystemClock.elapsedRealtime()));

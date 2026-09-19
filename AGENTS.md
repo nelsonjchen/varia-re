@@ -70,7 +70,7 @@ changes. Instructions from sibling repositories are examples, not rules here.
 - Read `docs/app.md` and `reports/2026-09-19_apk_protocol.md` before changing the
   decoder or connection setup. Preserve the distinction between static evidence
   and physical validation; numeric speed stays experimental until captured.
-- Build with JDK 17, SDK 35, and the checked-in Gradle wrapper. Canonical check:
+- Build with JDK 17, SDK 36, and the checked-in Gradle wrapper. Canonical check:
   `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug`.
 - Keep the protocol/policy core Android-independent. Use monotonic time for local
   freshness. Do not allow malformed/diagnostic frames to keep a dead stream live.
@@ -78,3 +78,13 @@ changes. Instructions from sibling repositories are examples, not rules here.
   generations after mode changes; distinguish host-relative targets in the UI.
 - Use an explicitly selected emulator/device serial for ADB. Never assume the
   first attached device is disposable. The task-created AVD is `ridewatch-api30`.
+
+## Device baseline (user directive, 2026-09-19)
+
+- User owns a Pixel 10 and permits it as the minimum supported baseline. RideWatch
+  uses Android 16 / API 36 for minSdk, targetSdk and compileSdk. Do not reintroduce
+  older-Android compatibility branches without a concrete new requirement.
+- Use association-ID presence observation and `onDevicePresenceEvent`, modern GATT
+  value callbacks and descriptor writes, and non-exported runtime receivers.
+- The historical API-30 emulator checks apply to v0.1 only. The current APK cannot
+  install there; do not cite those checks as validation of the Pixel 10 build.
