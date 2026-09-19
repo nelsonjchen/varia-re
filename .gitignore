@@ -1,0 +1,40 @@
+# Proprietary inputs, generated analysis, and private device captures
+/artifacts/*
+!/artifacts/README.md
+/external/
+/decompiled/
+/captures/
+/logs/
+/.tmp/
+*.apk
+*.apkm
+*.xapk
+*.aab
+*.dex
+*.so
+*.pcap
+*.pcapng
+*.btsnoop
+*.hprof
+
+# Secrets and local Android configuration
+.env
+.env.*
+!.env.example
+local.properties
+*.keystore
+*.jks
+
+# Python / JavaScript / Android outputs (keep dependency lockfiles)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.gradle/
+.kotlin/
+build/
+dist/
+.DS_Store
+.idea/
