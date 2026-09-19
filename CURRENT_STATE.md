@@ -12,7 +12,8 @@ Updated: 2026-09-19, America/Los_Angeles.
 - Standalone BLE service, reconnects, stale/error states, optional TTS speed,
   motion arming, companion presence integration and encrypted LAN group prototype.
 - Vibration alerts enabled by default, with individual replay buttons under
-  Controls → Test alerts; physical vibration sensation not yet confirmed.
+  Controls → Test alerts; Android reports approach/urgent/lost vibration
+  patterns completed on the physical Pixel. Perceived strength not yet rated.
 - Loudness-mastered synthesized Varia-style chimes, optional speech after tones, temporary music
   ducking and manual sound previews. [Audio research](reports/2026-09-19_audio.md).
 - Graphical distance lane with bike/car icons, threat banner, nearest distance,
