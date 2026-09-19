@@ -22,6 +22,7 @@ public final class RadarService extends Service {
   private final MotionGate motion = new MotionGate();
   private BleRadar ble;
   private RadarAudio audio;
+  private RadarVibration vibration;
   private final TonePolicy tones = new TonePolicy();
   private boolean armed, riding;
   private int battery = -1;
@@ -68,6 +69,7 @@ public final class RadarService extends Service {
     active = true;
     createChannel(this);
     audio = new RadarAudio(this);
+    vibration = new RadarVibration(this);
     ble =
         new BleRadar(
             this,
@@ -191,6 +193,7 @@ public final class RadarService extends Service {
     alerts.reset();
     tones.reset();
     audio.stop();
+    vibration.cancel();
     motion.reset();
     stopLocation();
     if (group != null) {
@@ -286,6 +289,8 @@ public final class RadarService extends Service {
                   snapshot, now, getSharedPreferences("ride", 0).getBoolean("speed", false));
           var tone = tones.update(snapshot);
           var prefs = getSharedPreferences("ride", 0);
+          if (!prefs.getBoolean("vibration", true)) vibration.cancel();
+          else if (tone != null) vibration.play(tone);
           if (speech != null || tone != null)
             audio.play(
                 prefs.getBoolean("tones", true) ? tone : null,
@@ -355,6 +360,7 @@ public final class RadarService extends Service {
     stopLocation();
     if (group != null) group.close();
     if (audio != null) audio.close();
+    if (vibration != null) vibration.cancel();
     tracker.reset();
     detail = "Monitoring stopped";
     armed = false;

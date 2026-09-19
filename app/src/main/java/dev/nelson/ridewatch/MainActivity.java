@@ -17,6 +17,7 @@ public final class MainActivity extends Activity {
   private TextView headline, detail, battery;
   private RadarView radar;
   private RadarAudio testAudio;
+  private RadarVibration testVibration;
   private Button rideButton;
   private LinearLayout content;
   private String pendingMode;
@@ -101,6 +102,7 @@ public final class MainActivity extends Activity {
     handler.removeCallbacksAndMessages(null);
     pendingMode = null;
     if (testAudio != null) testAudio.stop();
+    if (testVibration != null) testVibration.cancel();
     prefs.edit().putBoolean("enabled", false).putBoolean("paused", true).apply();
     getSystemService(NotificationManager.class).cancel(2);
     stopService(new Intent(this, RadarService.class));
@@ -131,10 +133,11 @@ public final class MainActivity extends Activity {
         .setItems(
             new String[] {
               "Pair radar",
-              "Sound & speech",
+              "Sound & vibration",
               "Host a group",
               "Join a group",
-              "Preview radar display"
+              "Preview radar display",
+              "Test alerts"
             },
             (dialog, which) -> {
               switch (which) {
@@ -143,6 +146,7 @@ public final class MainActivity extends Activity {
                 case 2 -> hostGroup();
                 case 3 -> joinGroup();
                 case 4 -> preview();
+                case 5 -> testTones();
               }
             })
         .setNegativeButton("Close", null)
@@ -151,22 +155,27 @@ public final class MainActivity extends Activity {
 
   private void speechSettings() {
     new AlertDialog.Builder(this)
-        .setTitle("Sound & speech")
+        .setTitle("Sound & vibration")
         .setMultiChoiceItems(
             new String[] {
-              "Varia-style tones", "Spoken vehicle alerts", "Speak radar speed · experimental"
+              "Varia-style tones",
+              "Spoken vehicle alerts",
+              "Speak radar speed · experimental",
+              "Vibration alerts"
             },
             new boolean[] {
               prefs.getBoolean("tones", true),
               prefs.getBoolean("speech", true),
-              prefs.getBoolean("speed", false)
+              prefs.getBoolean("speed", false),
+              prefs.getBoolean("vibration", true)
             },
             (dialog, which, checked) ->
                 prefs
                     .edit()
-                    .putBoolean(new String[] {"tones", "speech", "speed"}[which], checked)
+                    .putBoolean(
+                        new String[] {"tones", "speech", "speed", "vibration"}[which], checked)
                     .apply())
-        .setNeutralButton("Test tones", (dialog, which) -> testTones())
+        .setNeutralButton("Test alerts", (dialog, which) -> testTones())
         .setPositiveButton("Done", null)
         .show();
   }
@@ -177,29 +186,55 @@ public final class MainActivity extends Activity {
       return;
     }
     if (testAudio == null) testAudio = new RadarAudio(this);
-    new AlertDialog.Builder(this)
-        .setTitle("Test tones · media volume")
-        .setItems(
-            new String[] {
-              "Connected",
-              "Vehicle approaching",
-              "Fast approach",
-              "No vehicles detected",
-              "Radar data lost"
-            },
-            (dialog, which) -> {
-              var choices =
-                  new TonePolicy.Tone[] {
-                    TonePolicy.Tone.CONNECTED,
-                    TonePolicy.Tone.APPROACH,
-                    TonePolicy.Tone.URGENT,
-                    TonePolicy.Tone.EMPTY,
-                    TonePolicy.Tone.LOST
-                  };
-              testAudio.play(choices[which], null);
-            })
-        .setNegativeButton("Close", null)
-        .show();
+    if (testVibration == null) testVibration = new RadarVibration(this);
+    LinearLayout panel = new LinearLayout(this);
+    panel.setOrientation(LinearLayout.VERTICAL);
+    panel.setPadding(dp(16), dp(8), dp(16), dp(8));
+    TextView explanation = new TextView(this);
+    explanation.setText(
+        "Tap to replay. Tones use media volume; vibration follows your alert setting.");
+    panel.addView(explanation);
+    String[] labels = {
+      "Connected · tone",
+      "Vehicle approaching · 2 pulses",
+      "Fast approach · 3 long pulses",
+      "No vehicles detected · tone",
+      "Radar data lost · long pulse"
+    };
+    TonePolicy.Tone[] choices = {
+      TonePolicy.Tone.CONNECTED,
+      TonePolicy.Tone.APPROACH,
+      TonePolicy.Tone.URGENT,
+      TonePolicy.Tone.EMPTY,
+      TonePolicy.Tone.LOST
+    };
+    for (int i = 0; i < labels.length; i++) {
+      final var tone = choices[i];
+      Button button = new Button(this);
+      button.setText(labels[i]);
+      button.setAllCaps(false);
+      button.setMinHeight(dp(52));
+      button.setOnClickListener(
+          view -> {
+            testAudio.play(tone, null);
+            if (prefs.getBoolean("vibration", true)) testVibration.play(tone);
+          });
+      panel.addView(button, new LinearLayout.LayoutParams(-1, -2));
+    }
+    ScrollView scroller = new ScrollView(this);
+    scroller.addView(panel);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle("Test alerts")
+            .setView(scroller)
+            .setNegativeButton("Close", null)
+            .create();
+    dialog.setOnDismissListener(
+        ignored -> {
+          testAudio.stop();
+          testVibration.cancel();
+        });
+    dialog.show();
   }
 
   private void render(
@@ -285,12 +320,14 @@ public final class MainActivity extends Activity {
   @Override
   public void onStop() {
     if (testAudio != null) testAudio.stop();
+    if (testVibration != null) testVibration.cancel();
     unregisterReceiver(receiver);
     super.onStop();
   }
 
   private void start(String mode) {
     if (testAudio != null) testAudio.stop();
+    if (testVibration != null) testVibration.cancel();
     demo = false;
     handler.removeCallbacksAndMessages(null);
     render(
@@ -535,6 +572,7 @@ public final class MainActivity extends Activity {
   @Override
   public void onDestroy() {
     if (testAudio != null) testAudio.close();
+    if (testVibration != null) testVibration.cancel();
     handler.removeCallbacksAndMessages(null);
     super.onDestroy();
   }

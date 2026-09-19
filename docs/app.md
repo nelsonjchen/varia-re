@@ -147,3 +147,18 @@ normalization, with full per-stream playback gain. This deliberately trades a
 clean chime timbre for higher average signal level. It does not change the
 phone's volume setting or compress TTS. Physical speaker audibility remains to
 be tested; digital levels alone cannot establish audibility in traffic.
+
+
+## Vibration and individual tests (v0.6.2)
+
+Vibration defaults on independently of tones/speech. Approach: two 180ms pulses
+separated by 120ms. Urgent: three 300ms pulses separated by 100ms. Lost data: one
+650ms pulse. Connected and fresh-empty events do not vibrate. Patterns use the
+same deduplicated state events as tones; Pause/mode changes cancel vibration.
+Android notification-vibration/DND settings are respected.
+
+Controls → Sound & vibration has a Vibration alerts toggle. Controls → Test
+alerts (also available from the sound settings) opens a persistent panel with a
+separate replay button for each event. Monitoring must be paused. Tests play the
+selected tone and, if enabled, its vibration pattern; closing/backgrounding the
+panel cancels playback. These are synthetic tests, not simulated radar detection.
