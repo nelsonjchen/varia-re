@@ -16,6 +16,7 @@ import java.util.*;
 public final class MainActivity extends Activity {
   private TextView headline, detail, battery;
   private RadarView radar;
+  private RadarAudio testAudio;
   private Button rideButton;
   private LinearLayout content;
   private String pendingMode;
@@ -112,7 +113,7 @@ public final class MainActivity extends Activity {
             new String[] {
               "Pair radar / nearby reconnect",
               "Arm motion · above 4 mph",
-              "Spoken alerts",
+              "Sound & speech",
               "Host a group",
               "Join a group",
               "Preview radar display"
@@ -133,13 +134,54 @@ public final class MainActivity extends Activity {
 
   private void speechSettings() {
     new AlertDialog.Builder(this)
-        .setTitle("Spoken alerts")
+        .setTitle("Sound & speech")
         .setMultiChoiceItems(
-            new String[] {"Vehicle alerts", "Radar speed · experimental"},
-            new boolean[] {prefs.getBoolean("speech", true), prefs.getBoolean("speed", false)},
+            new String[] {
+              "Varia-style tones", "Spoken vehicle alerts", "Speak radar speed · experimental"
+            },
+            new boolean[] {
+              prefs.getBoolean("tones", true),
+              prefs.getBoolean("speech", true),
+              prefs.getBoolean("speed", false)
+            },
             (dialog, which, checked) ->
-                prefs.edit().putBoolean(which == 0 ? "speech" : "speed", checked).apply())
+                prefs
+                    .edit()
+                    .putBoolean(new String[] {"tones", "speech", "speed"}[which], checked)
+                    .apply())
+        .setNeutralButton("Test tones", (dialog, which) -> testTones())
         .setPositiveButton("Done", null)
+        .show();
+  }
+
+  private void testTones() {
+    if (prefs.getBoolean("enabled", false)) {
+      detail.setText("Stop monitoring before testing sounds.");
+      return;
+    }
+    if (testAudio == null) testAudio = new RadarAudio(this);
+    new AlertDialog.Builder(this)
+        .setTitle("Test tones · media volume")
+        .setItems(
+            new String[] {
+              "Connected",
+              "Vehicle approaching",
+              "Fast approach",
+              "No vehicles detected",
+              "Radar data lost"
+            },
+            (dialog, which) -> {
+              var choices =
+                  new TonePolicy.Tone[] {
+                    TonePolicy.Tone.CONNECTED,
+                    TonePolicy.Tone.APPROACH,
+                    TonePolicy.Tone.URGENT,
+                    TonePolicy.Tone.EMPTY,
+                    TonePolicy.Tone.LOST
+                  };
+              testAudio.play(choices[which], null);
+            })
+        .setNegativeButton("Close", null)
         .show();
   }
 
@@ -211,11 +253,13 @@ public final class MainActivity extends Activity {
 
   @Override
   public void onStop() {
+    if (testAudio != null) testAudio.stop();
     unregisterReceiver(receiver);
     super.onStop();
   }
 
   private void start(String mode) {
+    if (testAudio != null) testAudio.stop();
     demo = false;
     handler.removeCallbacksAndMessages(null);
     render(
@@ -463,6 +507,7 @@ public final class MainActivity extends Activity {
 
   @Override
   public void onDestroy() {
+    if (testAudio != null) testAudio.close();
     handler.removeCallbacksAndMessages(null);
     super.onDestroy();
   }

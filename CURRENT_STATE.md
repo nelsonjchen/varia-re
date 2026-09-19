@@ -4,13 +4,15 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.3** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.4** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - Decompiled Varia 5.1.3/157. Recovered legacy UUIDs, target ID/threat masks,
   distance, quarter-m/s speed scaling, errors and freshness behavior.
   [Provenance and source map](reports/2026-09-19_apk_protocol.md).
 - Standalone BLE service, reconnects, stale/error states, optional TTS speed,
   motion arming, companion presence integration and encrypted LAN group prototype.
+- Synthesized Varia-style chimes, optional speech after tones, temporary music
+  ducking and manual sound previews. [Audio research](reports/2026-09-19_audio.md).
 - Graphical distance lane with bike/car icons, threat banner, nearest distance,
   host-relative group labeling and a Controls panel. [Visual QA](design-qa.md).
 - JVM tests, real UDP socket test, SDK-36 build and lint. Android-16 emulator graphical preview, stale/offline states and responsive

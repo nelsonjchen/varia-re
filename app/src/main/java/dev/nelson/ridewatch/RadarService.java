@@ -6,9 +6,7 @@ import android.app.*;
 import android.content.*;
 import android.content.pm.*;
 import android.location.*;
-import android.media.AudioAttributes;
 import android.os.*;
-import android.speech.tts.TextToSpeech;
 import dev.nelson.ridewatch.core.*;
 import java.util.*;
 
@@ -21,8 +19,9 @@ public final class RadarService extends Service {
   private final AlertPolicy alerts = new AlertPolicy();
   private final MotionGate motion = new MotionGate();
   private BleRadar ble;
-  private TextToSpeech tts;
-  private boolean speechReady, armed, riding;
+  private RadarAudio audio;
+  private final TonePolicy tones = new TonePolicy();
+  private boolean armed, riding;
   private int battery = -1;
   private String detail = "Ready", mode = "ride";
   private LocationManager locations;
@@ -65,20 +64,7 @@ public final class RadarService extends Service {
     super.onCreate();
     active = true;
     createChannel(this);
-    tts =
-        new TextToSpeech(
-            this,
-            result -> {
-              speechReady = result == TextToSpeech.SUCCESS;
-              if (speechReady) {
-                tts.setLanguage(Locale.US);
-                tts.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build());
-              }
-            });
+    audio = new RadarAudio(this);
     ble =
         new BleRadar(
             this,
@@ -189,6 +175,8 @@ public final class RadarService extends Service {
     ble.stop();
     riding = false;
     alerts.reset();
+    tones.reset();
+    audio.stop();
     motion.reset();
     stopLocation();
     if (group != null) {
@@ -282,14 +270,14 @@ public final class RadarService extends Service {
           String speech =
               alerts.update(
                   snapshot, now, getSharedPreferences("ride", 0).getBoolean("speed", false));
-          if (speech != null
-              && speechReady
-              && getSharedPreferences("ride", 0).getBoolean("speech", true))
-            tts.speak(
-                ("join".equals(mode) ? "Group radar. " : "") + speech,
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "radar");
+          var tone = tones.update(snapshot);
+          var prefs = getSharedPreferences("ride", 0);
+          if (speech != null || tone != null)
+            audio.play(
+                prefs.getBoolean("tones", true) ? tone : null,
+                prefs.getBoolean("speech", true) && speech != null
+                    ? ("join".equals(mode) ? "Group radar. " : "") + speech
+                    : null);
           broadcast(snapshot);
           getSystemService(NotificationManager.class)
               .notify(1, notification(armed ? detail : headline(snapshot)));
@@ -349,10 +337,7 @@ public final class RadarService extends Service {
     if (ble != null) ble.stop();
     stopLocation();
     if (group != null) group.close();
-    if (tts != null) {
-      tts.stop();
-      tts.shutdown();
-    }
+    if (audio != null) audio.close();
     tracker.reset();
     detail = "Monitoring stopped";
     armed = false;

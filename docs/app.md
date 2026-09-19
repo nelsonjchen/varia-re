@@ -109,3 +109,18 @@ with the app. The inspected binaries/reference checkouts stay in ignored folders
    activity/presence wake strategy if it is too costly.
 6. Test two phones on a hotspot, clocks, packet loss, host stop, wrong join code,
    background networking, and peer distance. Confirm stale state appears promptly.
+
+## Sound (v0.4)
+
+Controls → Sound & speech offers independent **Varia-style tones**, **Spoken
+vehicle alerts**, and **Speak radar speed · experimental** switches. **Test tones**
+plays each generated sound while monitoring is stopped. These are synthesized
+approximations; no original Garmin audio is included. Tones default on and the
+existing speech preference is retained. Tones precede speech; newer events cancel
+old pending audio. Volume/output follow Android media/navigation routing, with
+temporary music ducking requested. Calls, focus denial, mute and unavailable TTS
+can prevent audio. Real Pixel/headphone routing and ducking remain untested.
+
+Connection, normal approach, fast approach, a fresh stream becoming empty, and
+data loss have distinct sounds. A stale/disconnected stream never plays the
+no-target tone. See [audio research](../reports/2026-09-19_audio.md).

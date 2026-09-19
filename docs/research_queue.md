@@ -8,7 +8,7 @@
 | R04 | Static done; physical pending | ID, range, threat, speed, heartbeat | APK parser plus raw fallback; synthetic tests; need RVR315 captures |
 | R05 | Runtime pending | Explain user's background termination | Garmin already has foreground service; need actual phone diagnostics |
 | R06 | Prototype built | Activation above 4 mph | GPS accuracy/dwell/gap gate tested; overnight power pending |
-| R07 | Prototype built | TTS | New/escalated threats, optional radar speed, queue flush; audio road test pending |
+| R07 | Tones + TTS built | Audio | Static Garmin mapping/measurements; synthesized chimes, serialized TTS, focus/stream emulator check; audible road test pending |
 | R08 | LAN prototype built | Joined-phone alerts | AES-GCM, replay/expiry, two-peer loopback test; physical networking pending |
 | R09 | Next with hardware | Validate Pixel 10 / Android 16 lifecycle | Association-ID presence wake, screen off, process death, OEM policy, reboot/force-stop |
 
