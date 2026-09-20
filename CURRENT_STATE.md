@@ -4,10 +4,10 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.8.0** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.8.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
-  pass. v0.8.0/12 installed on the physical Pixel at 17:32 PDT; disconnect audibility
+  pass. v0.8.1/13 installed on the physical Pixel at 17:37 PDT; disconnect audibility
   still needs a real radar check.
 - Direct BLE-disconnect chime + last-known battery speech; retry attempts stay
   quiet, and reconnect sounds cannot truncate the battery announcement.
@@ -22,7 +22,8 @@ Updated: 2026-09-19, America/Los_Angeles.
 - Vibration alerts enabled by default, with individual replay buttons under
   Controls → Test alerts; Android reports approach/urgent/lost vibration
   patterns completed on the physical Pixel. Perceived strength not yet rated.
-- Loudness-mastered synthesized Varia-style chimes, optional speech after tones, temporary music
+- Gentler synthesized Varia-style chimes (v0.8.1 backs off saturation/harmonics),
+  optional speech after tones, temporary music
   ducking and manual sound previews. [Audio research](reports/2026-09-19_audio.md).
 - Graphical distance lane with bike/car icons, threat banner, nearest distance,
   host-relative group labeling and a Controls panel. [Visual QA](design-qa.md).
@@ -44,7 +45,7 @@ this testing build. [Lifecycle checks](reports/2026-09-19_testing_lifecycle.md).
 Physical Pixel 10 Pro/Android 17 connection now observed: battery 84%, live
 empty stream after Bluetooth address fix. No controlled vehicle pass or raw
 packet capture yet. Decompiled app evidence is not a hardware capture. Speed remains experimental pending reference/sign validation; spoken output is
-now numbers-only at 1.4× rate, repeated every two seconds. Google fused rider
+now numbers-only at 1.4× rate, repeated every second. Google fused rider
 speed is added for an estimated car road speed; readings must be <=3 seconds old
 and report speed accuracy <=1.5 m/s. Unavailable rider speed contributes zero,
 per user preference, with an explicit UI indication.

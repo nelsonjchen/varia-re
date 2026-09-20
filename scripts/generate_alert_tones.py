@@ -6,12 +6,14 @@ import struct
 import wave
 RATE = 24000
 OVERSAMPLE = 4
+DRIVE = 1.0  # Gentle saturation; the former 4x drive audibly damaged the chimes.
+SECOND_HARMONIC = .08  # Keep some brightness without the former .18 buzz.
 PEAK = 10 ** (-1.5 / 20)  # Headroom for reconstruction and Android resampling.
 
 
 def master(samples):
-    """Soft saturation at 96 kHz, anti-alias filtering, then peak normalization."""
-    driven = [math.tanh(4 * value) for value in samples]
+    """Gentle saturation at 96 kHz, anti-alias filtering, then peak normalization."""
+    driven = [math.tanh(DRIVE * value) for value in samples]
     # Windowed-sinc low-pass before downsampling; do not alias saturation harmonics.
     half = 32
     cutoff = .45 / OVERSAMPLE
@@ -44,7 +46,7 @@ def generate(destination):
                 t = i / (RATE * OVERSAMPLE) - start
                 if 0 <= t < .30:
                     envelope = min(1, t / .004) * math.exp(-10*t) * min(1, (.30-t)/.02)
-                    value += envelope * sum(math.sin(2*math.pi*f*t) + .18*math.sin(4*math.pi*f*t) for f in frequencies) / len(frequencies)
+                    value += envelope * sum(math.sin(2*math.pi*f*t) + SECOND_HARMONIC*math.sin(4*math.pi*f*t) for f in frequencies) / len(frequencies)
             samples.append(value)
         samples = master(samples)
         with wave.open(str(destination / ('alert_' + name + '.wav')), 'wb') as output:

@@ -27,7 +27,7 @@ class AlertPolicy {
                 lastNumber = -10000
                 return null
             }
-            if (!riderMps.isFinite() || riderMps < 0 || now - lastNumber < 2000) return null
+            if (!riderMps.isFinite() || riderMps < 0 || now - lastNumber < 1000) return null
             val selected =
                 snapshot.targets
                     .filter { it.speedMps.isFinite() && it.speedMps >= 0 }

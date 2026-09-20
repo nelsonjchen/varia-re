@@ -32,6 +32,7 @@ class RadarAudio(context: Context) : AutoCloseable {
     private var stream = 0
     private var generation = 0L
     private var critical = false
+    private var speechPending = false
 
     init {
         pool.setOnLoadCompleteListener { _, id, result -> if (result == 0) loaded.add(id) }
@@ -86,9 +87,13 @@ class RadarAudio(context: Context) : AutoCloseable {
     @JvmOverloads
     fun play(tone: Tone?, speech: String?, priority: Boolean = false) {
         if (closed || (critical && !priority)) return
+        // Faster numeric refresh must not chop off a number already queued behind a chime.
+        // Drop this refresh; the next tick supplies the current speed, with no speech backlog.
+        if (!priority && tone == null && speech?.toIntOrNull() != null && speechPending) return
         stop()
         if (tone == null && speech == null) return
         critical = priority
+        speechPending = speech != null
         val token = generation
         val deadline = SystemClock.elapsedRealtime() + 2000
         begin(token, tone, speech, deadline)
@@ -154,6 +159,7 @@ class RadarAudio(context: Context) : AutoCloseable {
     fun stop() {
         generation++
         critical = false
+        speechPending = false
         handler.removeCallbacksAndMessages(null)
         if (stream != 0) pool.stop(stream)
         stream = 0

@@ -226,3 +226,21 @@ Pause still cancel playback. Controls → Test alerts includes a clearly labeled
 sample disconnect + 84% battery preview.
 
 [Migration evidence and remaining device check](../reports/2026-09-19_kotlin_disconnect.md).
+
+
+## Gentler tones and quicker speed speech (v0.8.1)
+
+All five chimes use gentler saturation (drive1 instead of4) and less added harmonic
+(.08 instead of.18). Peak headroom/cadence stay the same; average level is lower.
+Numeric speed now refreshes every **one second**. If a number is still speaking
+(or queued behind a chime), a redundant numeric refresh is skipped rather than
+cutting off speech or accumulating a queue. Loss/escalation alerts can still
+interrupt; the priority disconnect/battery sequence remains protected.
+
+Rechecked Garmin5.1.3 `je/h0.java` target decoder: unsigned byte2 ×0.25, passed
+to `je/p0.java`, whose string explicitly labels it `speedMetersPerSecond`. Our
+conversion divides m/s by .44704 for mph. Raw80 =20m/s ≈45mph before adding rider
+speed. This confirms scaling/units in static evidence, not physical accuracy.
+[Garmin's explanation](https://support.garmin.com/en-CA/?faq=0WK0iSND1W8GonJSGgJjU5)
+also describes fast approach relative to the bike; this supports but does not
+physically validate our interpretation of the RVR315 BLE field.

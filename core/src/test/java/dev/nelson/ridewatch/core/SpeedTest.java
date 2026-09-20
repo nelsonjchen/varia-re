@@ -15,7 +15,8 @@ public class SpeedTest {
     var policy = new AlertPolicy();
     var car = live(new RadarFrame.Target(1, 1, 80, 10));
     assertEquals("34", policy.update(car, 0, true, 5));
-    assertNull(policy.update(car, 1500, true, 5));
+    assertNull(policy.update(car, 500, true, 5));
+    assertEquals("45", policy.update(car, 1000, true, 10));
     assertEquals("45", policy.update(car, 2000, true, 10));
     assertNull(policy.update(live(), 2100, true, 10));
     assertEquals("34", policy.update(car, 2200, true, 5));
