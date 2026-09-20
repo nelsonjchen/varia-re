@@ -1,6 +1,7 @@
 package com.mindflakes.ridewatch
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.media.*
 import android.os.*
 import android.speech.tts.*
@@ -9,7 +10,15 @@ import com.mindflakes.ridewatch.core.TonePolicy.Tone
 import java.util.Locale
 
 /** One bounded audio event: chime then speech. Disconnect announcements survive reconnect ticks. */
-class RadarAudio(context: Context) : AutoCloseable {
+class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) : AutoCloseable {
+    private val prefs = context.getSharedPreferences("ride", 0)
+
+    private fun speechEnabled() =
+        !automaticSpeech || (prefs.getBoolean("speech", true) && prefs.getBoolean("speed", false))
+
+    private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if ((key == "speech" || key == "speed") && !speechEnabled() && speechPending) stop()
+    }
     private val handler = Handler(Looper.getMainLooper())
     private val callbacks = Handler(Looper.getMainLooper())
     private val manager = context.getSystemService(AudioManager::class.java)
@@ -35,6 +44,7 @@ class RadarAudio(context: Context) : AutoCloseable {
     private var speechPending = false
 
     init {
+        prefs.registerOnSharedPreferenceChangeListener(preferenceListener)
         pool.setOnLoadCompleteListener { _, id, result -> if (result == 0) loaded.add(id) }
         sounds[Tone.APPROACH] = pool.load(context, R.raw.alert_approach, 1)
         sounds[Tone.URGENT] = pool.load(context, R.raw.alert_urgent, 1)
@@ -86,17 +96,19 @@ class RadarAudio(context: Context) : AutoCloseable {
 
     @JvmOverloads
     fun play(tone: Tone?, speech: String?, priority: Boolean = false) {
+        val allowedSpeech = speech.takeIf { speechEnabled() }
         if (closed || (critical && !priority)) return
         // Faster numeric refresh must not chop off a number already queued behind a chime.
         // Drop this refresh; the next tick supplies the current speed, with no speech backlog.
-        if (!priority && tone == null && speech?.toIntOrNull() != null && speechPending) return
+        if (!priority && tone == null && allowedSpeech?.toIntOrNull() != null && speechPending)
+            return
         stop()
-        if (tone == null && speech == null) return
+        if (tone == null && allowedSpeech == null) return
         critical = priority
-        speechPending = speech != null
+        speechPending = allowedSpeech != null
         val token = generation
         val deadline = SystemClock.elapsedRealtime() + 2000
-        begin(token, tone, speech, deadline)
+        begin(token, tone, allowedSpeech, deadline)
     }
 
     private fun begin(token: Long, tone: Tone?, speech: String?, deadline: Long) {
@@ -135,7 +147,7 @@ class RadarAudio(context: Context) : AutoCloseable {
 
     private fun speak(token: Long, speech: String?, deadline: Long) {
         if (closed || token != generation) return
-        if (speech == null) {
+        if (speech == null || !speechEnabled()) {
             stop()
             return
         }
@@ -170,6 +182,7 @@ class RadarAudio(context: Context) : AutoCloseable {
     override fun close() {
         if (closed) return
         closed = true
+        prefs.unregisterOnSharedPreferenceChangeListener(preferenceListener)
         stop()
         pool.release()
         tts?.shutdown()

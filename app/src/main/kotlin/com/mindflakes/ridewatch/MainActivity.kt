@@ -229,7 +229,7 @@ class MainActivity : Activity() {
             .setMultiChoiceItems(
                 arrayOf(
                     "Varia-style tones",
-                    "Spoken vehicle alerts",
+                    "Speech (requires speed repeat)",
                     "Repeat estimated car speed",
                     "Vibration alerts",
                 ),
@@ -323,7 +323,7 @@ class MainActivity : Activity() {
             detail.text = "Stop monitoring before testing sounds."
             return
         }
-        val audio = testAudio ?: RadarAudio(this).also { testAudio = it }
+        val audio = testAudio ?: RadarAudio(this, automaticSpeech = false).also { testAudio = it }
         val volume = testVolume ?: RideVolume(this).also { testVolume = it }
         val vibration = testVibration ?: RadarVibration(this).also { testVibration = it }
         val panel =

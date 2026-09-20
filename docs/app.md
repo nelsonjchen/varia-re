@@ -288,3 +288,11 @@ music and videos. DND and output routing still apply. Abrupt force-stop cannot r
 restoration; a persisted session ledger supports later recovery, not immediate
 cleanup. Cleaner tone files remain unchanged. Pixel listening checks are pending.
 See [implementation and emulator evidence](../reports/2026-09-20_media_volume.md).
+
+### Speech off with speed repeat off (v0.10.2)
+
+Turning off **Repeat estimated car speed** now mutes all automatic speech,
+including generic vehicle warnings, stale/disconnect announcements and battery
+speech. Tones/vibration retain their own switches. Switching it off also cancels
+pending/current spoken alerts. Both speech and speed-repeat switches must be on
+for automatic TTS. Explicit spoken sample buttons under Test alerts still work.
