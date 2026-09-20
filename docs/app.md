@@ -305,3 +305,12 @@ last-known percentage used in disconnect speech. Failed/invalid reads retain the
 last valid value; reads do not count as radar heartbeats. Requests are serialized,
 stopped on Pause/disconnect, and restarted after reconnect. The explicit sample
 button still says 84% by design. Actual battery-gauge accuracy is not established.
+
+### Battery notifications (v0.10.5)
+
+Supersedes v0.10.4's normal polling: read once, then subscribe to radar-driven
+battery notifications, as Garmin does. Every valid update changes the displayed
+and disconnect-announced percentage. One-minute polling is retained only when
+notification subscription is unavailable/rejected. Notification cadence is set by
+the radar and is not yet measured. See the
+[comparison audit](../reports/2026-09-20_divergence_audit.md) for other differences.

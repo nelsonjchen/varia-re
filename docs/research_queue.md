@@ -81,3 +81,12 @@ See reports/2026-09-20_battery_refresh.md.
 Official app battery strategy recovered: initial read plus notifications, not a
 fixed interval in its setup sequence. See reports/2026-09-20_official_battery.md.
 Matching subscription and measuring radar-driven cadence remain next work.
+
+### 2026-09-20 notification matching and broader comparison
+
+v0.10.5 now reads then subscribes to Battery Level, polls only on unsupported/
+failed subscription. Installed Pixel; physical CCCD/notification capture pending.
+Audit: reports/2026-09-20_divergence_audit.md. Next diagnostics gaps are target
+indication (3205) and device model/firmware reads. Parser scale/ID/threat/range and
+expiry thresholds match static legacy evidence; expiry evaluation, error recovery,
+reconnect and audio/lifecycle policies are not exact parity.

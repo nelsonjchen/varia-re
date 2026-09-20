@@ -4,23 +4,25 @@ Updated: 2026-09-20, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.10.4** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
-- Battery is refreshed every 60 seconds while connected; display/disconnect speech
-  retain the most recent valid read. Physical periodic-read check pending.
+- Android **RideWatch v0.10.5** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Battery uses an initial read plus notifications, with 60-second polling only
+  if subscription fails/is unavailable. Physical notification validation pending.
+- BLE/behavior audit identified missing target-indication and model/firmware reads;
+  [other differences and priorities](reports/2026-09-20_divergence_audit.md).
 - Turning off speed repeat mutes normal ride TTS; disconnect/last-known battery
   speech remains enabled under the master speech switch.
 - Navigation/media-volume tones/TTS, configurable start minimum (default 80%), conditional
   restoration on Pause and preview close. 30 tests/build/lint plus emulator
-  volume/focus checks pass; Installed on Pixel at 08:59 PDT; listening checks pending.
+  volume/focus checks pass; Installed on Pixel at 09:40 PDT; listening checks pending.
   [Audio controls](reports/2026-09-20_media_volume.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - v0.9 reconnects on opening (including after Pause), removes the name header,
   and styles primary/secondary action buttons. Emulator UI/lifecycle checks pass;
-  included in the v0.10.4 Pixel install.
+  included in the v0.10.5 Pixel install.
 - Package/namespace: `com.mindflakes.ridewatch` (core `.core`). Old
   `dev.nelson.ridewatch` uninstalled at user request; fresh app needs radar pairing.
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
-  pass. v0.10.4/20 installed on the physical Pixel at 08:59 PDT on September 20; disconnect audibility
+  pass. v0.10.5/21 installed on the physical Pixel at 09:40 PDT on September 20; disconnect audibility
   still needs a real radar check.
 - Direct BLE-disconnect chime + last-known battery speech; retry attempts stay
   quiet, and reconnect sounds cannot truncate the battery announcement.
