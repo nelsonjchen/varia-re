@@ -108,3 +108,10 @@ without a new user request. See reports/2026-09-19_testing_lifecycle.md.
 - Unexpected BLE loss is a direct connection event, independent of stream health.
   Announce the retained battery once per lost connection, not every retry. Pause
   and mode changes remain silent and release audio. Never report a guessed battery.
+
+
+## Application identity (user directive, 2026-09-19)
+
+Use `com.mindflakes.ridewatch` for the Android namespace/application ID and
+`com.mindflakes.ridewatch.core` for core code. The previous package was explicitly
+uninstalled from the Pixel; use the new identity in future ADB commands.

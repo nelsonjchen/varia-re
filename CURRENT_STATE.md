@@ -4,10 +4,12 @@ Updated: 2026-09-19, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.8.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.8.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
+- Package/namespace: `com.mindflakes.ridewatch` (core `.core`). Old
+  `dev.nelson.ridewatch` uninstalled at user request; fresh app needs radar pairing.
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
-  pass. v0.8.1/13 installed on the physical Pixel at 17:37 PDT; disconnect audibility
+  pass. v0.8.2/14 freshly installed on the physical Pixel at 17:55 PDT; disconnect audibility
   still needs a real radar check.
 - Direct BLE-disconnect chime + last-known battery speech; retry attempts stay
   quiet, and reconnect sounds cannot truncate the battery announcement.

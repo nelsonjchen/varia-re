@@ -1,13 +1,13 @@
 plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
 android {
-    namespace 'dev.nelson.ridewatch'
+    namespace 'com.mindflakes.ridewatch'
     compileSdk 36
     defaultConfig {
-        applicationId 'dev.nelson.ridewatch'
+        applicationId 'com.mindflakes.ridewatch'
         minSdk 36
         targetSdk 36
-        versionCode 13
-        versionName '0.8.1'
+        versionCode 14
+        versionName '0.8.2'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

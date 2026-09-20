@@ -244,3 +244,15 @@ speed. This confirms scaling/units in static evidence, not physical accuracy.
 [Garmin's explanation](https://support.garmin.com/en-CA/?faq=0WK0iSND1W8GonJSGgJjU5)
 also describes fast approach relative to the bike; this supports but does not
 physically validate our interpretation of the RVR315 BLE field.
+
+
+## mindflakes.com namespace (v0.8.2)
+
+Android namespace/application ID: `com.mindflakes.ridewatch`. App classes and
+tests use this package; core classes/tests use `com.mindflakes.ridewatch.core`.
+The private update-broadcast action follows the new package too.
+
+Android sees this as a new app. At the user's request the old package was
+uninstalled from the Pixel and a fresh v0.8.2/14 installed; no settings or
+companion association were migrated. Open Controls → Pair radar for setup.
+Historical reports/journal references retain the package used at their time.
