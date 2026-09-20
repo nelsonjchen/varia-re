@@ -5,14 +5,14 @@ static Varia 5.1.3 analysis. Physical connection, battery read and a live empty 
 the user’s radar on Pixel 10 Pro/Android 17 in v0.6.1. Vehicle range/speed and
 background reliability remain unverified.
 
-## Current testing behavior — v0.6
+## Current testing behavior — v0.9
 
 This section overrides the earlier prototype lifecycle/motion descriptions below.
 RideWatch uses its own foreground service and stays running when backgrounded or
-when the screen is off. Pair once; opening the app connects unless paused.
+when the screen is off. Opening the app attempts to connect, including after Pause.
 **Pause** on the screen or notification stops monitoring, audio, reconnects and
 BLE/group connections. **Resume** restarts the last ride/host/join mode. Pausing
-persists when the app is reopened. Use Pause when switching to Garmin for testing.
+persists while you remain in the app or leave it closed; reopening resumes. Use Pause when switching to Garmin for testing.
 Installing RideWatch does not replace Garmin's separate app.
 
 Motion arming, companion wake and boot reminders are temporarily disabled. Normal
@@ -256,3 +256,20 @@ Android sees this as a new app. At the user's request the old package was
 uninstalled from the Pixel and a fresh v0.8.2/14 installed; no settings or
 companion association were migrated. Open Controls → Pair radar for setup.
 Historical reports/journal references retain the package used at their time.
+
+
+## Opening and screen polish (v0.9.0)
+
+An explicit app opening now starts or resumes the saved ride/group mode. Without
+a saved radar address, local mode scans using the existing Varia service filter.
+Android still requires the app’s Bluetooth permissions. Pause remains immediate;
+rotation or a permission/association dialog is not a new opening. Opening from
+Home/Recents or a new launch resumes. No boot/motion/nearby wake was re-enabled.
+
+Removed the persistent RideWatch wordmark. The device/battery line and radar
+status lead the screen. The bottom has 56dp Pause/Resume and Controls buttons
+with original vector icons, restrained navy surfaces, rounded corners, touch
+ripples and a visible keyboard-focus outline; Resume uses the existing lime
+accent. Layout was checked in portrait, landscape and at 320dp width.
+
+[Validation and design notes](../reports/2026-09-20_polish.md).

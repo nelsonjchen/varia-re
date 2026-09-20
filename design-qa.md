@@ -55,3 +55,12 @@ No physical radar, real BLE visual updates, live group mode, sunlight legibility
 TalkBack audio or enlarged-font interaction validated. Overlapping detections can
 share an icon position; total count remains visible. Range is plotted without
 inventing lateral position or extrapolating a vehicle's motion.
+
+## 2026-09-20 — v0.9 screen polish
+
+Removed persistent wordmark; styled session/control buttons with native ripples,
+visible keyboard focus and 56dp targets. Compared baseline portrait/landscape,
+then inspected final portrait/landscape and 320dp narrow rendering; labels fit.
+Tab order is Pause/Resume then Controls. Open-to-connect and rotation-preserved
+Pause checked on API36 emulator. See reports/2026-09-20_polish.md for scoped
+validation and ignored screenshot paths; Pixel install pending connection.

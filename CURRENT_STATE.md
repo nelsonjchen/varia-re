@@ -1,11 +1,14 @@
 # Current state
 
-Updated: 2026-09-19, America/Los_Angeles.
+Updated: 2026-09-20, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.8.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.9.0** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
+- v0.9 reconnects on opening (including after Pause), removes the name header,
+  and styles primary/secondary action buttons. Emulator UI/lifecycle checks pass;
+  physical update pending Pixel returning to ADB.
 - Package/namespace: `com.mindflakes.ridewatch` (core `.core`). Old
   `dev.nelson.ridewatch` uninstalled at user request; fresh app needs radar pairing.
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
@@ -38,8 +41,9 @@ Updated: 2026-09-19, America/Los_Angeles.
 ## Current testing lifecycle
 
 Foreground service stays active in background/screen off; Pause stops it and
-releases BLE/audio. Pause persists until Resume. Opening after pairing connects
-unless paused. Motion and companion wake plus boot reminders are disabled for
+releases BLE/audio. Resume or explicitly reopening starts a connection attempt.
+Rotation/permission dialogs preserve Pause. A fresh unpaired app can scan for
+the radar after permissions are granted. Motion and companion wake plus boot reminders are disabled for
 this testing build. [Lifecycle checks](reports/2026-09-19_testing_lifecycle.md).
 
 ## Evidence boundary

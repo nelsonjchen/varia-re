@@ -92,8 +92,10 @@ changes. Instructions from sibling repositories are examples, not rules here.
 ## Temporary testing lifecycle (user directive, 2026-09-19)
 
 Retain RideWatch's foreground service for screen-off/background monitoring.
-Pause must release BLE and stop audio/reconnects, persist across opening the app,
-and only an explicit user start/resume action may clear it. v0.6 disables motion/presence/boot wake
+Pause must release BLE and stop audio/reconnects. As of the user’s 2026-09-20
+request, opening/reopening the app is an explicit connection request and clears
+Pause; rotation and permission/association dialogs must not. Pause stays active
+while remaining in the app or away from it until it is reopened. v0.6 disables motion/presence/boot wake
 through TESTING_LIFECYCLE; do not re-enable these during side-by-side testing
 without a new user request. See reports/2026-09-19_testing_lifecycle.md.
 

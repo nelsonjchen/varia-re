@@ -7,8 +7,10 @@ import android.bluetooth.le.*
 import android.companion.*
 import android.content.*
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.*
 import android.view.*
 import android.widget.*
@@ -26,6 +28,7 @@ class MainActivity : Activity() {
     private var pendingMode: String? = null
     private var demo = false
     private var autoStartAttempted = false
+    private var choosingRadar = false
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var prefs: SharedPreferences
 
@@ -38,6 +41,7 @@ class MainActivity : Activity() {
     override fun onCreate(saved: Bundle?) {
         super.onCreate(saved)
         prefs = getSharedPreferences("ride", 0)
+        autoStartAttempted = saved?.getBoolean("autoStartAttempted", false) ?: false
         content =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -57,7 +61,6 @@ class MainActivity : Activity() {
             )
             insets
         }
-        text("RIDEWATCH", 16, Color.WHITE).letterSpacing = .16f
         battery = text("RVR315  ·  OFFLINE", 12, MUTED).apply { setPadding(0, dp(4), 0, dp(10)) }
         headline =
             text("Radar is off", 24, MUTED).apply {
@@ -71,30 +74,35 @@ class MainActivity : Activity() {
                 maxLines = 3
                 setPadding(0, dp(6), 0, dp(6))
             }
-        val actions = LinearLayout(this)
+        val actions = LinearLayout(this).apply { setPadding(0, dp(10), 0, dp(4)) }
         rideButton =
             Button(this).apply {
                 text = if (prefs.getBoolean("enabled", false)) "Pause" else "Resume"
                 isAllCaps = false
-                minHeight = dp(52)
+                styleAction(this, true)
                 setOnClickListener {
                     if (demo || prefs.getBoolean("enabled", false)) stopRide()
                     else start(resumeMode())
                 }
             }
-        actions.addView(rideButton, LinearLayout.LayoutParams(0, -2, 1f))
+        setRideAction(if (prefs.getBoolean("enabled", false)) "Pause" else "Resume")
+        actions.addView(
+            rideButton,
+            LinearLayout.LayoutParams(0, dp(56), 1.2f).apply { marginEnd = dp(10) },
+        )
         val settings =
             Button(this).apply {
                 text = "Controls"
                 isAllCaps = false
-                minHeight = dp(52)
+                styleAction(this, false)
+                setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_controls, 0, 0, 0)
                 setOnClickListener { controls() }
             }
-        actions.addView(settings, LinearLayout.LayoutParams(0, -2, 1f))
+        actions.addView(settings, LinearLayout.LayoutParams(0, dp(56), 1f))
         content.addView(actions)
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             content.removeView(radar)
-            content.addView(View(this), 3, LinearLayout.LayoutParams(-1, 0, 1f))
+            content.addView(View(this), 2, LinearLayout.LayoutParams(-1, 0, 1f))
             content.setOnApplyWindowInsetsListener(null)
             content.setPadding(0, 0, dp(24), 0)
             val wide = LinearLayout(this).apply { setBackgroundColor(Color.rgb(9, 13, 16)) }
@@ -118,6 +126,42 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun styleAction(button: Button, primary: Boolean) {
+        button.apply {
+            background =
+                getDrawable(
+                    if (primary) R.drawable.bg_ride_action else R.drawable.bg_controls_action
+                )
+            backgroundTintList = null
+            stateListAnimator = null
+            elevation = 0f
+            minWidth = 0
+            minimumWidth = 0
+            minHeight = dp(56)
+            setPadding(dp(if (primary) 16 else 12), 0, dp(if (primary) 16 else 12), 0)
+            textSize = 16f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            compoundDrawablePadding = dp(8)
+            setTextColor(Color.WHITE)
+            compoundDrawableTintList = ColorStateList.valueOf(Color.WHITE)
+        }
+    }
+
+    private fun setRideAction(label: String) {
+        val resume = label == "Resume"
+        rideButton.text = label
+        rideButton.isActivated = resume
+        val foreground = if (resume) INK else Color.WHITE
+        rideButton.setTextColor(foreground)
+        rideButton.compoundDrawableTintList = ColorStateList.valueOf(foreground)
+        rideButton.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            if (resume) R.drawable.ic_resume else R.drawable.ic_pause,
+            0,
+            0,
+            0,
+        )
+    }
+
     // stopService resolves the Intent component; it does not compare object identity.
     @SuppressLint("ImplicitSamInstance")
     private fun stopRide() {
@@ -138,14 +182,14 @@ class MainActivity : Activity() {
     private fun showPaused() {
         render(
             "Paused",
-            "Radar disconnected · tap Resume when ready",
+            "Monitoring paused · Resume or reopen to connect",
             "DISCONNECTED",
             0,
             intArrayOf(),
             intArrayOf(),
             false,
         )
-        rideButton.text = "Resume"
+        setRideAction("Resume")
         battery.text = "RVR315 · PAUSED"
     }
 
@@ -325,9 +369,18 @@ class MainActivity : Activity() {
                 }
                 val group = intent.getBooleanExtra("group", false)
                 val health = intent.getStringExtra("health") ?: "DISCONNECTED"
+                val message = intent.getStringExtra("detail") ?: ""
+                val title =
+                    when {
+                        health == "DISCONNECTED" && message.startsWith("Searching for radar") ->
+                            "Searching for radar"
+                        health == "DISCONNECTED" &&
+                            message.startsWith("Connecting to saved radar") -> "Connecting radar"
+                        else -> intent.getStringExtra("title") ?: "Radar disconnected"
+                    }
                 render(
-                    intent.getStringExtra("title") ?: "Radar disconnected",
-                    intent.getStringExtra("detail") ?: "",
+                    title,
+                    message,
                     health,
                     intent.getIntExtra("threat", 0),
                     intent.getIntArrayExtra("meters") ?: intArrayOf(),
@@ -340,25 +393,42 @@ class MainActivity : Activity() {
                         if (level < 0) ""
                         else
                             "  ·  $level% ${if (health == "DISCONNECTED") "last known" else "at connection"}"
-                rideButton.text = if (prefs.getBoolean("enabled", false)) "Pause" else "Resume"
+                setRideAction(if (prefs.getBoolean("enabled", false)) "Pause" else "Resume")
             }
         }
 
     override fun onStart() {
         super.onStart()
         registerReceiver(receiver, IntentFilter(RadarService.UPDATE), Context.RECEIVER_NOT_EXPORTED)
-        if (prefs.getBoolean("paused", false)) {
-            if (!demo) showPaused()
-            return
-        }
-        if (
-            !autoStartAttempted &&
-                !RadarService.active &&
-                (prefs.contains("radar") || prefs.getBoolean("enabled", false))
-        ) {
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Opening the app is an explicit connection request, including after Pause.
+        // Rotation and our permission/pairing flows are not a new opening.
+        if (!autoStartAttempted && !choosingRadar) {
             autoStartAttempted = true
-            start(resumeMode())
+            if (!RadarService.active) {
+                start(resumeMode())
+                return
+            }
         }
+        if (prefs.getBoolean("paused", false) && !demo) showPaused()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (pendingMode == null && !choosingRadar) autoStartAttempted = false
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("autoStartAttempted", autoStartAttempted)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 10) choosingRadar = false
     }
 
     override fun onStop() {
@@ -425,7 +495,10 @@ class MainActivity : Activity() {
         results: IntArray,
     ) {
         super.onRequestPermissionsResult(code, permissions, results)
-        if (results.isEmpty()) return
+        if (results.isEmpty()) {
+            pendingMode = null
+            return
+        }
         if (code == 20) {
             val optional =
                 setOf(
@@ -438,6 +511,7 @@ class MainActivity : Activity() {
                     results[it] != PackageManager.PERMISSION_GRANTED && permissions[it] !in optional
                 }
             ) {
+                pendingMode = null
                 detail.text = "Required permission denied. Choose a mode again after granting it."
                 return
             }
@@ -495,9 +569,11 @@ class MainActivity : Activity() {
     }
 
     private fun showChooser(chooser: IntentSender) {
+        choosingRadar = true
         try {
             startIntentSenderForResult(chooser, 10, null, 0, 0, 0)
         } catch (_: IntentSender.SendIntentException) {
+            choosingRadar = false
             detail.text = "Pairing chooser unavailable"
         }
     }
@@ -588,7 +664,7 @@ class MainActivity : Activity() {
             return
         }
         demo = true
-        rideButton.text = "End preview"
+        setRideAction("End preview")
         handler.removeCallbacksAndMessages(null)
         battery.text = "SIMULATION  ·  NO RADAR CONNECTED"
         for (step in 0 until 14) handler.postDelayed(

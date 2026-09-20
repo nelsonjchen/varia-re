@@ -24,9 +24,9 @@ and a local-network group notification prototype.
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 **Android 16+ / Pixel 10 baseline.** Previous Java versions connected to the
-physical Pixel 10 Pro / Android 17. The v0.8 Kotlin build has unit-test and API36
-emulator validation and is installed on the Pixel; physical disconnect audio
-validation is pending.
+physical Pixel 10 Pro / Android 17. The v0.9 build has unit-test and API36 emulator validation; its Pixel install is
+pending. v0.8.2 was installed previously. Physical disconnect audio validation
+is still pending.
 Motion/presence/boot wake are temporarily disabled for side-by-side testing. Group mode uses the same Wi-Fi/hotspot. Background
 survival is subject to Android/OEM policy; this is not an unkillable service.
 

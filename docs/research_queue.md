@@ -43,3 +43,11 @@ plus last-known battery, independent of stream freshness. 26 tests and API36
 emulator audio/service checks pass. Physical Pixel update and disconnect
 speaker/headphone check pending its return to wireless ADB. See
 [migration/disconnect report](../reports/2026-09-19_kotlin_disconnect.md).
+
+
+### 2026-09-20: open-to-connect and UI polish
+
+v0.9 treats app opening as a connection request even after Pause. API36 emulator
+checks cover fresh launch, Home/reopen, Pause and rotation, plus portrait/wide/
+320dp UI. Physical Pixel update pending ADB connection. Motion/presence/boot wake
+remain disabled. See [polish report](../reports/2026-09-20_polish.md).
