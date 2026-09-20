@@ -13,8 +13,11 @@ import java.util.Locale
 class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) : AutoCloseable {
     private val prefs = context.getSharedPreferences("ride", 0)
 
-    private fun speechEnabled() =
-        !automaticSpeech || (prefs.getBoolean("speech", true) && prefs.getBoolean("speed", false))
+    // Priority speech is the direct disconnect/battery announcement.
+    private fun speechEnabled(disconnectAnnouncement: Boolean = critical) =
+        !automaticSpeech ||
+            (prefs.getBoolean("speech", true) &&
+                (disconnectAnnouncement || prefs.getBoolean("speed", false)))
 
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if ((key == "speech" || key == "speed") && !speechEnabled() && speechPending) stop()
@@ -96,7 +99,7 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
 
     @JvmOverloads
     fun play(tone: Tone?, speech: String?, priority: Boolean = false) {
-        val allowedSpeech = speech.takeIf { speechEnabled() }
+        val allowedSpeech = speech.takeIf { speechEnabled(priority) }
         if (closed || (critical && !priority)) return
         // Faster numeric refresh must not chop off a number already queued behind a chime.
         // Drop this refresh; the next tick supplies the current speed, with no speech backlog.

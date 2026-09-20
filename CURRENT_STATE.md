@@ -4,21 +4,21 @@ Updated: 2026-09-20, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.10.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
-- Turning off speed repeat mutes all automatic TTS, including disconnect/battery
-  speech; explicit sound-test buttons remain available.
+- Android **RideWatch v0.10.3** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Turning off speed repeat mutes normal ride TTS; disconnect/last-known battery
+  speech remains enabled under the master speech switch.
 - Navigation/media-volume tones/TTS, configurable start minimum (default 80%), conditional
   restoration on Pause and preview close. 30 tests/build/lint plus emulator
-  volume/focus checks pass; Installed on Pixel at 08:32 PDT; listening checks pending.
+  volume/focus checks pass; Installed on Pixel at 08:36 PDT; listening checks pending.
   [Audio controls](reports/2026-09-20_media_volume.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - v0.9 reconnects on opening (including after Pause), removes the name header,
   and styles primary/secondary action buttons. Emulator UI/lifecycle checks pass;
-  included in the v0.10.2 Pixel install.
+  included in the v0.10.3 Pixel install.
 - Package/namespace: `com.mindflakes.ridewatch` (core `.core`). Old
   `dev.nelson.ridewatch` uninstalled at user request; fresh app needs radar pairing.
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
-  pass. v0.10.2/18 installed on the physical Pixel at 08:32 PDT on September 20; disconnect audibility
+  pass. v0.10.3/19 installed on the physical Pixel at 08:36 PDT on September 20; disconnect audibility
   still needs a real radar check.
 - Direct BLE-disconnect chime + last-known battery speech; retry attempts stay
   quiet, and reconnect sounds cannot truncate the battery announcement.

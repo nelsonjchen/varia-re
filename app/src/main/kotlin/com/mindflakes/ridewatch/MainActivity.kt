@@ -229,7 +229,7 @@ class MainActivity : Activity() {
             .setMultiChoiceItems(
                 arrayOf(
                     "Varia-style tones",
-                    "Speech (requires speed repeat)",
+                    "Speech (includes disconnect battery)",
                     "Repeat estimated car speed",
                     "Vibration alerts",
                 ),

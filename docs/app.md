@@ -289,10 +289,10 @@ restoration; a persisted session ledger supports later recovery, not immediate
 cleanup. Cleaner tone files remain unchanged. Pixel listening checks are pending.
 See [implementation and emulator evidence](../reports/2026-09-20_media_volume.md).
 
-### Speech off with speed repeat off (v0.10.2)
+### Speech settings (v0.10.3)
 
-Turning off **Repeat estimated car speed** now mutes all automatic speech,
-including generic vehicle warnings, stale/disconnect announcements and battery
-speech. Tones/vibration retain their own switches. Switching it off also cancels
-pending/current spoken alerts. Both speech and speed-repeat switches must be on
-for automatic TTS. Explicit spoken sample buttons under Test alerts still work.
+Turning off **Repeat estimated car speed** mutes normal automatic ride speech,
+including generic vehicle warnings and stale-data speech. The direct disconnect
+and last-known battery announcement remains enabled when the master Speech switch
+is on. Turning the master Speech switch off mutes both. Tones and vibration retain
+their own switches. Explicit spoken samples under Test alerts still work.
