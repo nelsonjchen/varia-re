@@ -296,3 +296,12 @@ including generic vehicle warnings and stale-data speech. The direct disconnect
 and last-known battery announcement remains enabled when the master Speech switch
 is on. Turning the master Speech switch off mutes both. Tones and vibration retain
 their own switches. Explicit spoken samples under Test alerts still work.
+
+### Battery refresh (v0.10.4)
+
+The radar's battery level is read immediately after subscribing and refreshed
+every 60 seconds after each completed read. This updates both the display and the
+last-known percentage used in disconnect speech. Failed/invalid reads retain the
+last valid value; reads do not count as radar heartbeats. Requests are serialized,
+stopped on Pause/disconnect, and restarted after reconnect. The explicit sample
+button still says 84% by design. Actual battery-gauge accuracy is not established.

@@ -65,3 +65,15 @@ User chose navigation audio again. v0.10.1 applies the configurable minimum and
 restoration to media volume instead; alarm settings untouched. Emulator 4→12→4
 start/Pause checked. Physical listening and manual-volume controls pending.
 See [media-volume report](../reports/2026-09-20_media_volume.md).
+
+### Battery freshness finding (2026-09-20)
+
+Production currently reads Battery Level only on subscription, so disconnect
+speech can use an old connection-time percentage. Explicit test uses sample84%.
+Next: periodic serialized refresh plus sample age, then physical discharge check;
+do not infer sensor accuracy from an unchanged cached reading.
+
+Battery refresh implemented in v0.10.4: immediate plus serialized 60-second reads,
+valid samples update display/disconnect speech. Installed Pixel; repeated physical
+callbacks/discharge validation still pending. Sample age UI remains future work.
+See reports/2026-09-20_battery_refresh.md.

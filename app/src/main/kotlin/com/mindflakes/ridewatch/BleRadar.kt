@@ -41,6 +41,31 @@ class BleRadar(private val context: Context, private val listener: Listener) {
     private var address: String? = null
     private var retries = 0
     private var lastPacket = 0L
+    private var batteryReadPending = false
+    private val batteryPoll = Runnable { readBattery() }
+
+    private fun readBattery() {
+        val client = gatt ?: return
+        if (!running || !subscribed || batteryReadPending) return
+        val characteristic =
+            client.getService(uuid16("180f"))?.getCharacteristic(uuid16("2a19")) ?: return
+        try {
+            batteryReadPending = client.readCharacteristic(characteristic)
+            if (!batteryReadPending) scheduleBatteryRead()
+            // Await the callback before another request: never overlap GATT operations.
+            // Radar notifications/watchdog remain independent of battery-read success.
+        } catch (error: RuntimeException) {
+            batteryReadPending = false
+            android.util.Log.w("RideWatchBle", "Battery read unavailable", error)
+            scheduleBatteryRead()
+        }
+    }
+
+    private fun scheduleBatteryRead() {
+        handler.removeCallbacks(batteryPoll)
+        if (running && subscribed) handler.postDelayed(batteryPoll, 60_000)
+    }
+
     private val watchdog =
         object : Runnable {
             override fun run() {
@@ -82,6 +107,8 @@ class BleRadar(private val context: Context, private val listener: Listener) {
     }
 
     private fun close() {
+        handler.removeCallbacks(batteryPoll)
+        batteryReadPending = false
         subscribed = false
         scanner?.let {
             try {
@@ -235,9 +262,7 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                     retries = 0
                     lastPacket = SystemClock.elapsedRealtime()
                     listener.status("Connected · waiting for radar data")
-                    client.getService(uuid16("180f"))?.getCharacteristic(uuid16("2a19"))?.let {
-                        client.readCharacteristic(it)
-                    }
+                    readBattery()
                 }
             }
 
@@ -250,13 +275,28 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                 val copy = bytes.copyOf()
                 handler.post {
                     if (
-                        client === gatt &&
-                            code == 0 &&
-                            characteristic.uuid == uuid16("2a19") &&
-                            copy.isNotEmpty() &&
-                            (copy[0].toInt() and 255) <= 100
+                        client !== gatt ||
+                            !running ||
+                            !subscribed ||
+                            characteristic.uuid != uuid16("2a19")
                     )
-                        listener.battery(copy[0].toInt() and 255)
+                        return@post
+                    batteryReadPending = false
+                    if (
+                        code == BluetoothGatt.GATT_SUCCESS &&
+                            copy.size == 1 &&
+                            (copy[0].toInt() and 255) <= 100
+                    ) {
+                        val percent = copy[0].toInt() and 255
+                        android.util.Log.d("RideWatchBle", "Battery read: $percent%")
+                        listener.battery(percent)
+                    } else {
+                        android.util.Log.w(
+                            "RideWatchBle",
+                            "Battery read failed or invalid: status=$code bytes=${copy.size}",
+                        )
+                    }
+                    scheduleBatteryRead()
                 }
             }
 
