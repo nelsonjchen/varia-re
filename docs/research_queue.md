@@ -77,3 +77,7 @@ Battery refresh implemented in v0.10.4: immediate plus serialized 60-second read
 valid samples update display/disconnect speech. Installed Pixel; repeated physical
 callbacks/discharge validation still pending. Sample age UI remains future work.
 See reports/2026-09-20_battery_refresh.md.
+
+Official app battery strategy recovered: initial read plus notifications, not a
+fixed interval in its setup sequence. See reports/2026-09-20_official_battery.md.
+Matching subscription and measuring radar-driven cadence remain next work.
