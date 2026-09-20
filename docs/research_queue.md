@@ -58,3 +58,10 @@ v0.10 moves tones/TTS to alarm volume with a configurable start minimum and
 conditional restoration on Pause. Emulator volume/focus checks and 30 tests pass;
 Pixel listening/routing and force-stop recovery behavior remain hardware work.
 See [alarm-volume report](../reports/2026-09-20_alarm_volume.md).
+
+### 2026-09-20 correction: navigation/media volume
+
+User chose navigation audio again. v0.10.1 applies the configurable minimum and
+restoration to media volume instead; alarm settings untouched. Emulator 4→12→4
+start/Pause checked. Physical listening and manual-volume controls pending.
+See [media-volume report](../reports/2026-09-20_media_volume.md).

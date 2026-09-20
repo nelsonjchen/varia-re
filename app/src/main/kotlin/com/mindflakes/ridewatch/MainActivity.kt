@@ -43,7 +43,7 @@ class MainActivity : Activity() {
     override fun onCreate(saved: Bundle?) {
         super.onCreate(saved)
         prefs = getSharedPreferences("ride", 0)
-        volumeControlStream = AudioManager.STREAM_ALARM
+        volumeControlStream = AudioManager.STREAM_MUSIC
         autoStartAttempted = saved?.getBoolean("autoStartAttempted", false) ?: false
         content =
             LinearLayout(this).apply {
@@ -261,7 +261,7 @@ class MainActivity : Activity() {
         panel.addView(
             TextView(this).apply {
                 text =
-                    "Tones and speech use alarm volume. This shares the volume of your wake-up alarms. Volume buttons adjust it while RideWatch is open."
+                    "Tones and speech use media volume. This shares the volume of music and videos. Volume buttons adjust it while RideWatch is open."
             }
         )
         val automatic =
@@ -277,11 +277,11 @@ class MainActivity : Activity() {
                 max = 100
                 progress = prefs.getInt("ride_volume", 80)
                 minHeight = dp(48)
-                contentDescription = "Minimum ride alarm volume"
+                contentDescription = "Minimum ride media volume"
                 isEnabled = automatic.isChecked
             }
         fun label() {
-            val steps = manager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            val steps = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
             level.text =
                 "Minimum: ${slider.progress}% · ${RideVolumePolicy.minimum(steps, slider.progress)} of $steps volume steps"
         }
@@ -334,7 +334,7 @@ class MainActivity : Activity() {
         panel.addView(
             TextView(this).apply {
                 text =
-                    "Tap to replay. Tones and speech use alarm volume and your ride minimum; vibration follows your alert setting."
+                    "Tap to replay. Tones and speech use media volume and your ride minimum; vibration follows your alert setting."
             }
         )
         val choices =

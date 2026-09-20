@@ -13,14 +13,14 @@ import com.mindflakes.ridewatch.core.RideVolumePolicy
 class RideVolume(private val context: Context) : AutoCloseable {
     private val manager = context.getSystemService(AudioManager::class.java)
     private val settings = context.getSharedPreferences("ride", 0)
-    private val ledger = context.getSharedPreferences("ride_volume_session", 0)
+    private val ledger = context.getSharedPreferences("ride_media_volume_session", 0)
     private var policy: RideVolumePolicy? = null
     private var started = false
     private val observer =
         object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
                 policy?.let {
-                    it.observe(manager.getStreamVolume(AudioManager.STREAM_ALARM))
+                    it.observe(manager.getStreamVolume(AudioManager.STREAM_MUSIC))
                     if (it.overridden) ledger.edit().putBoolean("overridden", true).apply()
                 }
             }
@@ -30,7 +30,7 @@ class RideVolume(private val context: Context) : AutoCloseable {
         if (started) return
         started = true
         val boot = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
-        val current = manager.getStreamVolume(AudioManager.STREAM_ALARM)
+        val current = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
         // Recover a killed service's lease, but never carry volume ownership across reboot.
         if (ledger.getInt("boot", -2) == boot && ledger.contains("original")) {
             policy =
@@ -47,7 +47,7 @@ class RideVolume(private val context: Context) : AutoCloseable {
                     maxOf(
                         current,
                         RideVolumePolicy.minimum(
-                            manager.getStreamMaxVolume(AudioManager.STREAM_ALARM),
+                            manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                             settings.getInt("ride_volume", 80),
                         ),
                     )
@@ -61,16 +61,16 @@ class RideVolume(private val context: Context) : AutoCloseable {
                 .putInt("raised", target)
                 .commit()
             if (target > current) setVolume(target)
-            policy!!.observe(manager.getStreamVolume(AudioManager.STREAM_ALARM))
+            policy!!.observe(manager.getStreamVolume(AudioManager.STREAM_MUSIC))
         }
         context.contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, observer)
     }
 
     private fun setVolume(value: Int) {
         try {
-            manager.setStreamVolume(AudioManager.STREAM_ALARM, value, 0)
+            manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0)
         } catch (error: SecurityException) {
-            Log.w("RideWatchAudio", "Alarm volume restricted by system policy", error)
+            Log.w("RideWatchAudio", "Media volume restricted by system policy", error)
         }
     }
 
@@ -78,7 +78,7 @@ class RideVolume(private val context: Context) : AutoCloseable {
         if (!started) return
         started = false
         context.contentResolver.unregisterContentObserver(observer)
-        policy?.restore(manager.getStreamVolume(AudioManager.STREAM_ALARM))?.let { setVolume(it) }
+        policy?.restore(manager.getStreamVolume(AudioManager.STREAM_MUSIC))?.let { setVolume(it) }
         ledger.edit().clear().commit()
         policy = null
     }

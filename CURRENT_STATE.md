@@ -4,11 +4,11 @@ Updated: 2026-09-20, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.10.0** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
-- Alarm-volume tones/TTS, configurable start minimum (default 80%), conditional
+- Android **RideWatch v0.10.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Navigation/media-volume tones/TTS, configurable start minimum (default 80%), conditional
   restoration on Pause and preview close. 30 tests/build/lint plus emulator
   volume/focus checks pass; Pixel listening/install pending.
-  [Audio controls](reports/2026-09-20_alarm_volume.md).
+  [Audio controls](reports/2026-09-20_media_volume.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - v0.9 reconnects on opening (including after Pause), removes the name header,
   and styles primary/secondary action buttons. Emulator UI/lifecycle checks pass;
