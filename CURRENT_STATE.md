@@ -7,16 +7,16 @@ Updated: 2026-09-20, America/Los_Angeles.
 - Android **RideWatch v0.10.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - Navigation/media-volume tones/TTS, configurable start minimum (default 80%), conditional
   restoration on Pause and preview close. 30 tests/build/lint plus emulator
-  volume/focus checks pass; Pixel listening/install pending.
+  volume/focus checks pass; Installed on Pixel at 08:30 PDT; listening checks pending.
   [Audio controls](reports/2026-09-20_media_volume.md).
 - APK: `app/build/outputs/apk/debug/app-debug.apk` (generated, ignored).
 - v0.9 reconnects on opening (including after Pause), removes the name header,
   and styles primary/secondary action buttons. Emulator UI/lifecycle checks pass;
-  physical update pending Pixel returning to ADB.
+  included in the v0.10.1 Pixel install.
 - Package/namespace: `com.mindflakes.ridewatch` (core `.core`). Old
   `dev.nelson.ridewatch` uninstalled at user request; fresh app needs radar pairing.
 - All production code is Kotlin. 26 tests, build/lint and API36 emulator checks
-  pass. v0.8.2/14 freshly installed on the physical Pixel at 17:55 PDT; disconnect audibility
+  pass. v0.10.1/17 installed on the physical Pixel at 08:30 PDT on September 20; disconnect audibility
   still needs a real radar check.
 - Direct BLE-disconnect chime + last-known battery speech; retry attempts stay
   quiet, and reconnect sounds cannot truncate the battery announcement.
