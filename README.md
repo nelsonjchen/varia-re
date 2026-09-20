@@ -25,7 +25,8 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 **Android 16+ / Pixel 10 baseline.** Previous Java versions connected to the
 physical Pixel 10 Pro / Android 17. The v0.8 Kotlin build has unit-test and API36
-emulator validation; physical update is pending the phone returning to ADB.
+emulator validation and is installed on the Pixel; physical disconnect audio
+validation is pending.
 Motion/presence/boot wake are temporarily disabled for side-by-side testing. Group mode uses the same Wi-Fi/hotspot. Background
 survival is subject to Android/OEM policy; this is not an unkillable service.
 
