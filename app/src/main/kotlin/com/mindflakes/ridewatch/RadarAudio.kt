@@ -15,7 +15,7 @@ class RadarAudio(context: Context) : AutoCloseable {
     private val manager = context.getSystemService(AudioManager::class.java)
     private val attributes =
         AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+            .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
     private val focus =
@@ -52,7 +52,7 @@ class RadarAudio(context: Context) : AutoCloseable {
                             tts?.setSpeechRate(1.4f)
                             tts?.setAudioAttributes(
                                 AudioAttributes.Builder()
-                                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                                    .setUsage(AudioAttributes.USAGE_ALARM)
                                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                                     .build()
                             )

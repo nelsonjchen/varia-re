@@ -50,6 +50,7 @@ class RadarService : Service() {
     private val disconnect = DisconnectPolicy()
     private lateinit var ble: BleRadar
     private lateinit var audio: RadarAudio
+    private lateinit var volume: RideVolume
     private lateinit var vibration: RadarVibration
     private lateinit var rideSpeed: RideSpeedLocation
     private var rideLocationAllowed = false
@@ -101,6 +102,7 @@ class RadarService : Service() {
         active = true
         createChannel(this)
         audio = RadarAudio(this)
+        volume = RideVolume(this)
         vibration = RadarVibration(this)
         rideSpeed = RideSpeedLocation(this)
         ble =
@@ -235,6 +237,7 @@ class RadarService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        volume.start()
         prefs.edit().putBoolean("enabled", true).putString("mode", mode).apply()
         lastNotificationText = null
         handler.removeCallbacks(tick)
@@ -409,6 +412,7 @@ class RadarService : Service() {
         rideSpeed.stop()
         group?.close()
         audio.close()
+        volume.close()
         vibration.cancel()
         tracker.reset()
         detail = "Monitoring stopped"

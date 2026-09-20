@@ -11,6 +11,7 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
+import android.media.AudioManager
 import android.os.*
 import android.view.*
 import android.widget.*
@@ -22,6 +23,7 @@ class MainActivity : Activity() {
     private lateinit var battery: TextView
     private lateinit var radar: RadarView
     private var testAudio: RadarAudio? = null
+    private var testVolume: RideVolume? = null
     private var testVibration: RadarVibration? = null
     private lateinit var rideButton: Button
     private lateinit var content: LinearLayout
@@ -41,6 +43,7 @@ class MainActivity : Activity() {
     override fun onCreate(saved: Bundle?) {
         super.onCreate(saved)
         prefs = getSharedPreferences("ride", 0)
+        volumeControlStream = AudioManager.STREAM_ALARM
         autoStartAttempted = saved?.getBoolean("autoStartAttempted", false) ?: false
         content =
             LinearLayout(this).apply {
@@ -169,6 +172,7 @@ class MainActivity : Activity() {
         handler.removeCallbacksAndMessages(null)
         pendingMode = null
         testAudio?.stop()
+        testVolume?.close()
         testVibration?.cancel()
         prefs.edit().putBoolean("enabled", false).putBoolean("paused", true).apply()
         getSystemService(NotificationManager::class.java).cancel(2)
@@ -242,6 +246,74 @@ class MainActivity : Activity() {
                     .apply()
             }
             .setNeutralButton("Test alerts") { _, _ -> testTones() }
+            .setNegativeButton("Volume") { _, _ -> volumeSettings() }
+            .setPositiveButton("Done", null)
+            .show()
+    }
+
+    private fun volumeSettings() {
+        val manager = getSystemService(AudioManager::class.java)
+        val panel =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(24), dp(8), dp(24), dp(8))
+            }
+        panel.addView(
+            TextView(this).apply {
+                text =
+                    "Tones and speech use alarm volume. This shares the volume of your wake-up alarms. Volume buttons adjust it while RideWatch is open."
+            }
+        )
+        val automatic =
+            Switch(this).apply {
+                text = "Raise volume when starting a ride"
+                minHeight = dp(56)
+                isChecked = prefs.getBoolean("auto_volume", true)
+            }
+        panel.addView(automatic)
+        val level = TextView(this)
+        val slider =
+            SeekBar(this).apply {
+                max = 100
+                progress = prefs.getInt("ride_volume", 80)
+                minHeight = dp(48)
+                contentDescription = "Minimum ride alarm volume"
+                isEnabled = automatic.isChecked
+            }
+        fun label() {
+            val steps = manager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            level.text =
+                "Minimum: ${slider.progress}% · ${RideVolumePolicy.minimum(steps, slider.progress)} of $steps volume steps"
+        }
+        label()
+        panel.addView(level)
+        panel.addView(slider)
+        automatic.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("auto_volume", checked).apply()
+            slider.isEnabled = checked
+        }
+        slider.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                    label()
+                    if (fromUser) prefs.edit().putInt("ride_volume", progress).apply()
+                }
+
+                override fun onStartTrackingTouch(bar: SeekBar) {}
+
+                override fun onStopTrackingTouch(bar: SeekBar) {}
+            }
+        )
+        panel.addView(
+            TextView(this).apply {
+                text =
+                    "Applies on the next ride or sound test. Pause restores the previous volume unless you adjusted it. Do Not Disturb and connected audio devices still apply."
+            }
+        )
+        AlertDialog.Builder(this)
+            .setTitle("Ride volume")
+            .setView(ScrollView(this).apply { addView(panel) })
+            .setNeutralButton("Test alerts") { _, _ -> testTones() }
             .setPositiveButton("Done", null)
             .show()
     }
@@ -252,6 +324,7 @@ class MainActivity : Activity() {
             return
         }
         val audio = testAudio ?: RadarAudio(this).also { testAudio = it }
+        val volume = testVolume ?: RideVolume(this).also { testVolume = it }
         val vibration = testVibration ?: RadarVibration(this).also { testVibration = it }
         val panel =
             LinearLayout(this).apply {
@@ -261,7 +334,7 @@ class MainActivity : Activity() {
         panel.addView(
             TextView(this).apply {
                 text =
-                    "Tap to replay. Tones use media volume; vibration follows your alert setting."
+                    "Tap to replay. Tones and speech use alarm volume and your ride minimum; vibration follows your alert setting."
             }
         )
         val choices =
@@ -278,6 +351,7 @@ class MainActivity : Activity() {
                 isAllCaps = false
                 minHeight = dp(52)
                 setOnClickListener {
+                    volume.start()
                     audio.play(tone, null)
                     if (prefs.getBoolean("vibration", true)) vibration.play(tone)
                 }
@@ -290,6 +364,7 @@ class MainActivity : Activity() {
                 isAllCaps = false
                 setOnClickListener {
                     vibration.cancel()
+                    volume.start()
                     audio.play(null, "35")
                 }
             },
@@ -306,6 +381,7 @@ class MainActivity : Activity() {
                             connected()
                             battery(84)
                         }
+                    volume.start()
                     audio.play(TonePolicy.Tone.LOST, policy.disconnected(), true)
                     if (prefs.getBoolean("vibration", true)) vibration.play(TonePolicy.Tone.LOST)
                 }
@@ -320,6 +396,7 @@ class MainActivity : Activity() {
                 .create()
         dialog.setOnDismissListener {
             audio.stop()
+            volume.close()
             vibration.cancel()
         }
         dialog.show()
@@ -433,6 +510,7 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         testAudio?.stop()
+        testVolume?.close()
         testVibration?.cancel()
         unregisterReceiver(receiver)
         super.onStop()
@@ -440,6 +518,7 @@ class MainActivity : Activity() {
 
     private fun start(mode: String) {
         testAudio?.stop()
+        testVolume?.close()
         testVibration?.cancel()
         demo = false
         handler.removeCallbacksAndMessages(null)
@@ -714,6 +793,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         testAudio?.close()
+        testVolume?.close()
         testVibration?.cancel()
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()

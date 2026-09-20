@@ -273,3 +273,18 @@ ripples and a visible keyboard-focus outline; Resume uses the existing lime
 accent. Layout was checked in portrait, landscape and at 320dp width.
 
 [Validation and design notes](../reports/2026-09-20_polish.md).
+
+## Alarm volume (v0.10.0)
+
+Tones and spoken numbers now use the phone's **alarm volume**. Controls → Sound &
+vibration → Volume lets you enable automatic raising and choose a minimum
+(default 80%, rounded up to a volume step). It applies at the next ride or paused
+sound test; louder existing volume stays unchanged. Volume buttons control alarm
+volume while RideWatch is open. Test alerts uses the same minimum.
+
+Pause restores the previous alarm level unless a manual change was observed.
+Closing/backgrounding a sound preview also restores it. This is shared with your
+wake-up alarms. DND and output routing still apply. Abrupt force-stop cannot run
+restoration; a persisted session ledger supports later recovery, not immediate
+cleanup. Cleaner tone files remain unchanged. Pixel listening checks are pending.
+See [implementation and emulator evidence](../reports/2026-09-20_alarm_volume.md).

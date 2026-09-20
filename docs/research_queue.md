@@ -51,3 +51,10 @@ v0.9 treats app opening as a connection request even after Pause. API36 emulator
 checks cover fresh launch, Home/reopen, Pause and rotation, plus portrait/wide/
 320dp UI. Physical Pixel update pending ADB connection. Motion/presence/boot wake
 remain disabled. See [polish report](../reports/2026-09-20_polish.md).
+
+### 2026-09-20: alarm-volume controls
+
+v0.10 moves tones/TTS to alarm volume with a configurable start minimum and
+conditional restoration on Pause. Emulator volume/focus checks and 30 tests pass;
+Pixel listening/routing and force-stop recovery behavior remain hardware work.
+See [alarm-volume report](../reports/2026-09-20_alarm_volume.md).
