@@ -329,3 +329,11 @@ count state. Disconnect/battery speech remains independent of speed repeat.
 
 Test alerts includes a "Multiple vehicles · 2 cars, 45" sample. Actual vehicle
 count depends on radar tracking and expiry; this is not a classification guarantee.
+
+### Entering tests during monitoring (v0.11.1)
+
+Test alerts and Preview radar display offer **Pause & test / Pause & preview**
+when monitoring is active. The prompt explains that no radar is needed and live
+alerts will stop. Accepting pauses monitoring, waits for service teardown, then
+opens the requested tester. Cancel keeps monitoring. When already paused, tests
+open directly. This replaces the easy-to-miss status-line refusal.

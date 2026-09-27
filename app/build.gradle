@@ -6,8 +6,8 @@ android {
         applicationId 'com.mindflakes.ridewatch'
         minSdk 36
         targetSdk 36
-        versionCode 22
-        versionName '0.11.0'
+        versionCode 23
+        versionName '0.11.1'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

@@ -29,6 +29,7 @@ class MainActivity : Activity() {
     private lateinit var content: LinearLayout
     private var pendingMode: String? = null
     private var demo = false
+    private var foreground = false
     private var autoStartAttempted = false
     private var choosingRadar = false
     private val handler = Handler(Looper.getMainLooper())
@@ -318,11 +319,53 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun offerPauseForTest(actionLabel: String, launch: () -> Unit): Boolean {
+        if (!prefs.getBoolean("enabled", false) && !RadarService.active) return false
+        AlertDialog.Builder(this)
+            .setTitle("Pause monitoring to try this?")
+            .setMessage(
+                "No radar is needed. This will disconnect the radar and stop live alerts. Tap Resume when you're done testing."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton(actionLabel) { _, _ ->
+                stopRide()
+                val deadline = SystemClock.elapsedRealtime() + 5000
+                // Wait for service teardown before a preview acquires the volume lease.
+                val waitForStop =
+                    object : Runnable {
+                        override fun run() {
+                            if (
+                                !foreground ||
+                                    isFinishing ||
+                                    isDestroyed ||
+                                    prefs.getBoolean("enabled", false)
+                            )
+                                return
+                            if (!RadarService.active) launch()
+                            else if (SystemClock.elapsedRealtime() < deadline)
+                                handler.postDelayed(this, 50)
+                            else
+                                Toast.makeText(
+                                        this@MainActivity,
+                                        "Monitoring is still stopping. Please try again.",
+                                        Toast.LENGTH_LONG,
+                                    )
+                                    .show()
+                        }
+                    }
+                handler.post(waitForStop)
+            }
+            .show()
+        return true
+    }
+
+    override fun onPause() {
+        foreground = false
+        super.onPause()
+    }
+
     private fun testTones() {
-        if (prefs.getBoolean("enabled", false)) {
-            detail.text = "Stop monitoring before testing sounds."
-            return
-        }
+        if (offerPauseForTest("Pause & test", ::testTones)) return
         val audio = testAudio ?: RadarAudio(this, automaticSpeech = false).also { testAudio = it }
         val volume = testVolume ?: RideVolume(this).also { testVolume = it }
         val vibration = testVibration ?: RadarVibration(this).also { testVibration = it }
@@ -493,6 +536,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        foreground = true
         // Opening the app is an explicit connection request, including after Pause.
         // Rotation and our permission/pairing flows are not a new opening.
         if (!autoStartAttempted && !choosingRadar) {
@@ -750,10 +794,7 @@ class MainActivity : Activity() {
     }
 
     private fun preview() {
-        if (prefs.getBoolean("enabled", false)) {
-            detail.text = "Stop monitoring before starting the simulated preview."
-            return
-        }
+        if (offerPauseForTest("Pause & preview", ::preview)) return
         demo = true
         setRideAction("End preview")
         handler.removeCallbacksAndMessages(null)
