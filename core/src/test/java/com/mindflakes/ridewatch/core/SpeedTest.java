@@ -42,9 +42,9 @@ public class SpeedTest {
     var nearNormal = new RadarFrame.Target(2, 1, 20, 10);
     var nearFast = new RadarFrame.Target(3, 2, 50, 25);
     var policy = new AlertPolicy();
-    assertEquals("67", policy.update(live(nearNormal, farFast, nearFast), 0, true, 5));
+    assertEquals("3 cars. 67", policy.update(live(nearNormal, farFast, nearFast), 0, true, 5));
     assertEquals("67", policy.update(live(nearFast, farFast, nearNormal), 2000, true, 5));
-    assertEquals("34", policy.update(live(nearNormal), 4000, true, 5));
+    assertEquals("1 car. 34", policy.update(live(nearNormal), 4000, true, 5));
   }
 
   @Test

@@ -90,3 +90,8 @@ Audit: reports/2026-09-20_divergence_audit.md. Next diagnostics gaps are target
 indication (3205) and device model/firmware reads. Parser scale/ID/threat/range and
 expiry thresholds match static legacy evidence; expiry evaluation, error recovery,
 reconnect and audio/lifecycle policies are not exact parity.
+
+### 2026-09-27 multi-vehicle speech
+
+v0.11.0 counts group changes then repeats priority speed; lone approaches remain
+numbers-only. Synthetic transition tests added; Pixel install/listening pending.

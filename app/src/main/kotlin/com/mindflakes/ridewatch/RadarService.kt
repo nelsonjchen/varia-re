@@ -354,7 +354,7 @@ class RadarService : Service() {
                     alerts.update(
                         snapshot,
                         now,
-                        prefs.getBoolean("speed", false),
+                        prefs.getBoolean("speed", false) && prefs.getBoolean("speech", true),
                         if (mode == "join") Double.NaN else rideSpeed.at(now),
                     )
                 val tone = tones.update(snapshot)

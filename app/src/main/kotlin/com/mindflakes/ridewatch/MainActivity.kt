@@ -372,6 +372,18 @@ class MainActivity : Activity() {
         )
         panel.addView(
             Button(this).apply {
+                text = "Multiple vehicles · 2 cars, 45"
+                isAllCaps = false
+                setOnClickListener {
+                    vibration.cancel()
+                    volume.start()
+                    audio.play(null, "2 cars. 45")
+                }
+            },
+            LinearLayout.LayoutParams(-1, -2),
+        )
+        panel.addView(
+            Button(this).apply {
                 text = "Disconnect · sample battery 84%"
                 isAllCaps = false
                 setOnClickListener {

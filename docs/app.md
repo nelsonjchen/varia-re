@@ -314,3 +314,18 @@ and disconnect-announced percentage. One-minute polling is retained only when
 notification subscription is unavailable/rejected. Notification cadence is set by
 the radar and is not yet measured. See the
 [comparison audit](../reports/2026-09-20_divergence_audit.md) for other differences.
+
+### Multiple-vehicle speech (v0.11.0)
+
+With speed repeat enabled, a single approaching car still gets only its estimated
+speed number. When two or more tracks are present, speech prefixes the current
+speed with the count ("2 cars. 45"). Unchanged counts are not repeated; subsequent
+updates are numbers only. Changes within a group announce the new count, including
+"1 car" once when it drops to one. Empty/stale/reset state clears the count so the
+next lone approach is numbers-only again. Highest threat wins, then nearest target;
+no stable named car identities are promised. Count updates use the existing1s
+cadence and current snapshot, not a queue of old counts. Turning speech off resets
+count state. Disconnect/battery speech remains independent of speed repeat.
+
+Test alerts includes a "Multiple vehicles · 2 cars, 45" sample. Actual vehicle
+count depends on radar tracking and expiry; this is not a classification guarantee.

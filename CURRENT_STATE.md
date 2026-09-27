@@ -1,10 +1,12 @@
 # Current state
 
-Updated: 2026-09-20, America/Los_Angeles.
+Updated: 2026-09-27, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.10.5** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.11.0** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- v0.11.0 adds count-change speech for multiple vehicles; lone approaches remain
+  numbers-only. Built locally; Pixel still has v0.10.5 (ADB offline).
 - Battery uses an initial read plus notifications, with 60-second polling only
   if subscription fails/is unavailable. Physical notification validation pending.
 - BLE/behavior audit identified missing target-indication and model/firmware reads;
