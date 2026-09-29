@@ -337,3 +337,13 @@ when monitoring is active. The prompt explains that no radar is needed and live
 alerts will stop. Accepting pauses monitoring, waits for service teardown, then
 opens the requested tester. Cancel keeps monitoring. When already paused, tests
 open directly. This replaces the easy-to-miss status-line refusal.
+
+### Battery verification and freshness (v0.11.2)
+
+Battery updates support both notifications and indications. Independent serialized
+reads continue every minute even after subscription succeeds. An unanswered read
+or subscription times out after30s and reconnects. The header shows when the last
+valid reading arrived and marks it stale after3min; an unchanged but freshly read
+percentage refreshes that timestamp. This supersedes the earlier fallback-only
+polling description. Raw battery diagnostics are available in RideWatchBle logs.
+The cause of the reported constant84% still needs physical verification.

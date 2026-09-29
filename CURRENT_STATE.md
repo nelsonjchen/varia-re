@@ -1,16 +1,18 @@
 # Current state
 
-Updated: 2026-09-27, America/Los_Angeles.
+Updated: 2026-09-28, America/Los_Angeles.
 
 ## Delivered
 
-- Android **RideWatch v0.11.1** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.11.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - v0.11.0 adds count-change speech for multiple vehicles; lone approaches remain
   numbers-only. Installed on Pixel as v0.11.1 at 08:19 PDT September 27; road listening pending.
 - Test/preview actions now explain that no radar is needed and offer Pause & test
   or Pause & preview, then launch automatically after service teardown.
-- Battery uses an initial read plus notifications, with 60-second polling only
-  if subscription fails/is unavailable. Physical notification validation pending.
+- v0.11.2 supports battery indications/notifications plus independent60s reads,
+  request timeout and visible sample age.36 tests/build/lint pass; APK local only,
+  Pixel still v0.11.1. Constant84% cause remains unverified.
+  [Battery corrections](reports/2026-09-28_battery_reliability.md).
 - BLE/behavior audit identified missing target-indication and model/firmware reads;
   [other differences and priorities](reports/2026-09-20_divergence_audit.md).
 - Turning off speed repeat mutes normal ride TTS; disconnect/last-known battery

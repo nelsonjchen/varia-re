@@ -520,11 +520,17 @@ class MainActivity : Activity() {
                     group,
                 )
                 val level = intent.getIntExtra("battery", -1)
+                val ageMs = intent.getLongExtra("batteryAgeMs", -1)
+                val batteryAge =
+                    when {
+                        ageMs < 0 -> "age unknown"
+                        ageMs < 60_000 -> "just read"
+                        ageMs < 180_000 -> "${ageMs / 60_000}m ago"
+                        else -> "${ageMs / 60_000}m ago · stale"
+                    }
                 battery.text =
                     (if (group) "GROUP · HOST RADAR" else "RVR315") +
-                        if (level < 0) ""
-                        else
-                            "  ·  $level% ${if (health == "DISCONNECTED") "last known" else "at connection"}"
+                        if (level < 0) "" else "  ·  $level% · $batteryAge"
                 setRideAction(if (prefs.getBoolean("enabled", false)) "Pause" else "Resume")
             }
         }

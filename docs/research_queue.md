@@ -95,3 +95,11 @@ reconnect and audio/lifecycle policies are not exact parity.
 
 v0.11.0 counts group changes then repeats priority speed; lone approaches remain
 numbers-only. Synthetic transition tests added; Pixel install/listening pending.
+
+### 2026-09-28 battery correctness follow-up
+
+Constant84% still unverified. v0.11.2 fixes omitted indication support, adds minute
+read-back regardless of subscription success, request timeout/reconnect and sample
+age display/logging.36 tests/build/lint pass; Pixel install/capture pending.
+See reports/2026-09-28_battery_reliability.md. Need raw repeated successful reads
+before attributing unchanged percentages to firmware or claiming the symptom fixed.

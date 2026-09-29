@@ -7,6 +7,7 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.*
+import com.mindflakes.ridewatch.core.BatteryStatus
 import com.mindflakes.ridewatch.core.BluetoothAddress
 import java.util.UUID
 
@@ -46,22 +47,20 @@ class BleRadar(private val context: Context, private val listener: Listener) {
     private var batteryNotifyPending = false
     private var batteryNotifications = false
     private val batteryPoll = Runnable { readBattery() }
+    private val batteryTimeout = Runnable {
+        if (running && (batteryReadPending || batteryNotifyPending))
+            retry("Battery request timed out; reconnecting")
+    }
 
     private fun readBattery() {
         val client = gatt ?: return
-        if (
-            !running ||
-                !subscribed ||
-                batteryReadPending ||
-                batteryNotifyPending ||
-                batteryNotifications
-        )
-            return
+        if (!running || !subscribed || batteryReadPending || batteryNotifyPending) return
         val characteristic =
             client.getService(uuid16("180f"))?.getCharacteristic(uuid16("2a19")) ?: return
         try {
             batteryReadPending = client.readCharacteristic(characteristic)
-            if (!batteryReadPending) enableBatteryNotifications()
+            if (batteryReadPending) handler.postDelayed(batteryTimeout, 30_000)
+            else enableBatteryNotifications()
             // Await the callback before another request: never overlap GATT operations.
             // Radar notifications/watchdog remain independent of battery-read success.
         } catch (error: RuntimeException) {
@@ -73,7 +72,7 @@ class BleRadar(private val context: Context, private val listener: Listener) {
 
     private fun scheduleBatteryRead() {
         handler.removeCallbacks(batteryPoll)
-        if (running && subscribed && !batteryNotifications && !batteryNotifyPending)
+        if (running && subscribed && !batteryReadPending && !batteryNotifyPending)
             handler.postDelayed(batteryPoll, 60_000)
     }
 
@@ -86,11 +85,12 @@ class BleRadar(private val context: Context, private val listener: Listener) {
         val client = gatt ?: return
         val characteristic = client.getService(uuid16("180f"))?.getCharacteristic(uuid16("2a19"))
         val descriptor = characteristic?.getDescriptor(CCCD)
-        if (
-            characteristic == null ||
-                descriptor == null ||
-                characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY == 0
-        ) {
+        val cccd = characteristic?.let { BatteryStatus.cccdValue(it.properties) }
+        android.util.Log.i(
+            "RideWatchBle",
+            "Battery properties=${characteristic?.properties} CCCD=$cccd",
+        )
+        if (characteristic == null || descriptor == null || cccd == null) {
             android.util.Log.i(
                 "RideWatchBle",
                 "Battery notifications unavailable; polling fallback",
@@ -103,19 +103,24 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                 batteryNotifyPending =
                     client.writeDescriptor(
                         descriptor,
-                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE,
+                        if (cccd == 2) BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                        else BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE,
                     ) == BluetoothStatusCodes.SUCCESS
             }
         } catch (error: RuntimeException) {
             android.util.Log.w("RideWatchBle", "Battery subscription unavailable", error)
         }
-        if (!batteryNotifyPending) scheduleBatteryRead()
+        if (batteryNotifyPending) handler.postDelayed(batteryTimeout, 30_000)
+        else scheduleBatteryRead()
     }
 
     private fun acceptBattery(bytes: ByteArray, source: String) {
         if (bytes.size == 1 && (bytes[0].toInt() and 255) <= 100) {
             val percent = bytes[0].toInt() and 255
-            android.util.Log.d("RideWatchBle", "Battery $source: $percent%")
+            android.util.Log.d(
+                "RideWatchBle",
+                "Battery $source: raw=${bytes[0].toUByte().toString(16)} percent=$percent at=${SystemClock.elapsedRealtime()}",
+            )
             listener.battery(percent)
         } else android.util.Log.w("RideWatchBle", "Invalid battery $source: bytes=${bytes.size}")
     }
@@ -162,6 +167,7 @@ class BleRadar(private val context: Context, private val listener: Listener) {
 
     private fun close() {
         handler.removeCallbacks(batteryPoll)
+        handler.removeCallbacks(batteryTimeout)
         batteryReadPending = false
         batteryNotifyAttempted = false
         batteryNotifyPending = false
@@ -312,13 +318,14 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                     if (client !== gatt || !running) return@post
                     if (descriptor.characteristic.uuid == uuid16("2a19")) {
                         if (!batteryNotifyPending) return@post
+                        handler.removeCallbacks(batteryTimeout)
                         batteryNotifyPending = false
                         batteryNotifications = code == BluetoothGatt.GATT_SUCCESS
                         android.util.Log.i(
                             "RideWatchBle",
                             "Battery notifications enabled=$batteryNotifications status=$code",
                         )
-                        if (!batteryNotifications) scheduleBatteryRead()
+                        scheduleBatteryRead()
                         return@post
                     }
                     if (descriptor.characteristic.uuid != MEASUREMENT || descriptor.uuid != CCCD)
@@ -351,6 +358,8 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                             characteristic.uuid != uuid16("2a19")
                     )
                         return@post
+                    if (!batteryReadPending) return@post
+                    handler.removeCallbacks(batteryTimeout)
                     batteryReadPending = false
                     if (code == BluetoothGatt.GATT_SUCCESS) acceptBattery(copy, "read")
                     else android.util.Log.w("RideWatchBle", "Battery read failed: status=$code")

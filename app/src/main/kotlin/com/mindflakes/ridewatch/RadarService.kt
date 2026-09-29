@@ -56,7 +56,10 @@ class RadarService : Service() {
     private var rideLocationAllowed = false
     private var armed = false
     private var riding = false
-    private var battery = -1
+    private val batteryStatus = BatteryStatus()
+    private val battery: Int
+        get() = batteryStatus.percent
+
     private var lastNotificationText: String? = null
     private var detail = "Ready"
     private var mode = "ride"
@@ -136,7 +139,7 @@ class RadarService : Service() {
                     }
 
                     override fun battery(percent: Int) {
-                        battery = percent
+                        batteryStatus.accept(percent, SystemClock.elapsedRealtime())
                         disconnect.battery(percent)
                     }
 
@@ -244,7 +247,7 @@ class RadarService : Service() {
         disconnect.reset()
         ble.stop()
         tracker.reset()
-        battery = -1
+        batteryStatus.reset()
         riding = false
         alerts.reset()
         tones.reset()
@@ -398,6 +401,7 @@ class RadarService : Service() {
                 .putExtra("health", snapshot.health.name)
                 .putExtra("threat", snapshot.targets.maxOfOrNull { it.threat } ?: 0)
                 .putExtra("battery", battery)
+                .putExtra("batteryAgeMs", batteryStatus.ageMillis(SystemClock.elapsedRealtime()))
                 .putExtra("group", mode == "join")
         )
     }
