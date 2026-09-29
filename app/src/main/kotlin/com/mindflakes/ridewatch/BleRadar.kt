@@ -4,11 +4,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.bluetooth.le.*
-import android.content.Context
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.*
 import com.mindflakes.ridewatch.core.BatteryStatus
 import com.mindflakes.ridewatch.core.BluetoothAddress
+import com.mindflakes.ridewatch.core.ReconnectPolicy
 import java.util.UUID
 
 /** One GATT owner; all state transitions serialized onto main looper. */
@@ -37,10 +38,33 @@ class BleRadar(private val context: Context, private val listener: Listener) {
     private val handler = Handler(Looper.getMainLooper())
     private var gatt: BluetoothGatt? = null
     private var scanner: BluetoothLeScanner? = null
+    private var scanCallback: ScanCallback? = null
     private var running = false
     private var subscribed = false
     private var address: String? = null
-    private var retries = 0
+    private val reconnect = ReconnectPolicy()
+    private var transportConnected = false
+    private var observingBluetooth = false
+    private val bluetoothState =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (!running) return
+                when (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
+                    BluetoothAdapter.STATE_TURNING_OFF,
+                    BluetoothAdapter.STATE_OFF -> {
+                        close()
+                        handler.removeCallbacks(retryTask)
+                        listener.disconnected()
+                        listener.status("Bluetooth off · waiting for Bluetooth")
+                    }
+                    BluetoothAdapter.STATE_ON -> {
+                        close()
+                        handler.removeCallbacks(retryTask)
+                        attempt()
+                    }
+                }
+            }
+        }
     private var lastPacket = 0L
     private var batteryReadPending = false
     private var batteryNotifyAttempted = false
@@ -131,7 +155,7 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                 if (!running) return
                 if (subscribed && SystemClock.elapsedRealtime() - lastPacket > 15000)
                     retry("No radar data; reconnecting")
-                handler.postDelayed(this, 5000)
+                if (running && subscribed) handler.postDelayed(this, 5000)
             }
         }
 
@@ -153,19 +177,35 @@ class BleRadar(private val context: Context, private val listener: Listener) {
         }
         if (address != null && address != savedAddress)
             context.getSharedPreferences("ride", 0).edit().putString("radar", address).apply()
-        retries = 0
+        reconnect.start()
+        context.registerReceiver(
+            bluetoothState,
+            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+            Context.RECEIVER_NOT_EXPORTED,
+        )
+        observingBluetooth = true
         attempt()
-        handler.postDelayed(watchdog, 5000)
+    }
+
+    fun requestConnection() {
+        if (running && !transportConnected) start(address)
     }
 
     fun stop() {
         running = false
+        if (observingBluetooth) {
+            context.unregisterReceiver(bluetoothState)
+            observingBluetooth = false
+        }
         handler.removeCallbacksAndMessages(null)
         close()
         // Intentional shutdown is handled by the service, not a transport-loss event.
     }
 
     private fun close() {
+        handler.removeCallbacks(timeout)
+        handler.removeCallbacks(watchdog)
+        transportConnected = false
         handler.removeCallbacks(batteryPoll)
         handler.removeCallbacks(batteryTimeout)
         batteryReadPending = false
@@ -175,10 +215,11 @@ class BleRadar(private val context: Context, private val listener: Listener) {
         subscribed = false
         scanner?.let {
             try {
-                it.stopScan(scan)
+                scanCallback?.let(it::stopScan)
             } catch (_: RuntimeException) {}
         }
         scanner = null
+        scanCallback = null
         val old = gatt
         gatt = null
         if (old != null) {
@@ -198,16 +239,21 @@ class BleRadar(private val context: Context, private val listener: Listener) {
             }
             val adapter = context.getSystemService(BluetoothManager::class.java).adapter
             if (adapter == null || !adapter.isEnabled) {
-                retry("Turn on Bluetooth; retrying")
+                listener.status("Bluetooth off · waiting for Bluetooth")
                 return
             }
             val saved = address
             if (!saved.isNullOrBlank()) {
-                listener.status("Connecting to saved radar…")
+                listener.status(
+                    if (reconnect.autoConnect) "Waiting for radar · auto-connect"
+                    else "Connecting to saved radar…"
+                )
                 connect(adapter.getRemoteDevice(saved))
             } else {
                 listener.status("Searching for radar…")
                 scanner = adapter.bluetoothLeScanner
+                val scan = newScanCallback()
+                scanCallback = scan
                 scanner?.startScan(
                     listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE)).build()),
                     ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
@@ -224,11 +270,21 @@ class BleRadar(private val context: Context, private val listener: Listener) {
     private val timeout = Runnable { retry("Connection timed out; retrying") }
 
     private fun connect(device: BluetoothDevice) {
-        scanner?.stopScan(scan)
+        scanCallback?.let { scanner?.stopScan(it) }
         scanner = null
+        scanCallback = null
         handler.removeCallbacks(timeout)
-        gatt = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-        handler.postDelayed(timeout, 20000)
+        android.util.Log.i("RideWatchBle", "Connecting autoConnect=${reconnect.autoConnect}")
+        gatt =
+            device.connectGatt(
+                context,
+                reconnect.autoConnect,
+                callback,
+                BluetoothDevice.TRANSPORT_LE,
+            )
+        if (gatt == null) retry("Bluetooth client unavailable; retrying")
+        else if (!reconnect.autoConnect) handler.postDelayed(timeout, 20000)
+        // Pending auto-connect has no deadline: Android waits for advertisements.
     }
 
     private fun retry(message: String) {
@@ -238,15 +294,18 @@ class BleRadar(private val context: Context, private val listener: Listener) {
         handler.removeCallbacks(retryTask)
         listener.disconnected()
         listener.status(message)
-        handler.postDelayed(retryTask, minOf(30000L, 1000L shl minOf(retries++, 5)))
+        val delay = reconnect.retryDelayMillis()
+        android.util.Log.i("RideWatchBle", "$message; retry in ${delay}ms")
+        handler.postDelayed(retryTask, delay)
     }
 
     private val retryTask = Runnable { attempt() }
-    private val scan =
+
+    private fun newScanCallback(): ScanCallback =
         object : ScanCallback() {
             override fun onScanResult(type: Int, result: ScanResult) {
                 handler.post {
-                    if (running && scanner != null) {
+                    if (running && scanner != null && scanCallback === this) {
                         address = result.device.address
                         context
                             .getSharedPreferences("ride", 0)
@@ -259,9 +318,12 @@ class BleRadar(private val context: Context, private val listener: Listener) {
             }
 
             override fun onScanFailed(code: Int) {
-                handler.post { retry("Scan failed ($code); retrying") }
+                handler.post {
+                    if (running && scanCallback === this) retry("Scan failed ($code); retrying")
+                }
             }
         }
+
     private val callback =
         object : BluetoothGattCallback() {
             override fun onConnectionStateChange(client: BluetoothGatt, code: Int, state: Int) {
@@ -271,6 +333,11 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                         code == BluetoothGatt.GATT_SUCCESS &&
                             state == BluetoothProfile.STATE_CONNECTED
                     ) {
+                        if (transportConnected) return@post
+                        transportConnected = true
+                        handler.removeCallbacks(timeout)
+                        handler.postDelayed(timeout, 20000)
+                        // Bound service discovery/subscription even for auto-connect.
                         // Track the transport immediately, including disconnect during discovery.
                         listener.connected()
                         listener.status("Reading radar services…")
@@ -278,14 +345,21 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                     } else if (
                         state == BluetoothProfile.STATE_DISCONNECTED ||
                             code != BluetoothGatt.GATT_SUCCESS
-                    )
-                        retry("Radar disconnected; retrying")
+                    ) {
+                        android.util.Log.i(
+                            "RideWatchBle",
+                            "Disconnected status=$code connected=$transportConnected",
+                        )
+                        if (reconnect.keepWaiting(transportConnected, code)) {
+                            listener.status("Waiting for radar · auto-connect")
+                        } else retry("Radar disconnected; retrying")
+                    }
                 }
             }
 
             override fun onServicesDiscovered(client: BluetoothGatt, code: Int) {
                 handler.post {
-                    if (client !== gatt || !running) return@post
+                    if (client !== gatt || !running || !transportConnected) return@post
                     val measurement = client.getService(SERVICE)?.getCharacteristic(MEASUREMENT)
                     if (code != 0 || measurement == null) {
                         retry("Legacy radar service not found")
@@ -315,7 +389,7 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                 code: Int,
             ) {
                 handler.post {
-                    if (client !== gatt || !running) return@post
+                    if (client !== gatt || !running || !transportConnected) return@post
                     if (descriptor.characteristic.uuid == uuid16("2a19")) {
                         if (!batteryNotifyPending) return@post
                         handler.removeCallbacks(batteryTimeout)
@@ -336,7 +410,9 @@ class BleRadar(private val context: Context, private val listener: Listener) {
                     }
                     handler.removeCallbacks(timeout)
                     subscribed = true
-                    retries = 0
+                    reconnect.ready()
+                    handler.removeCallbacks(watchdog)
+                    handler.postDelayed(watchdog, 5000)
                     lastPacket = SystemClock.elapsedRealtime()
                     listener.status("Connected · waiting for radar data")
                     readBattery()

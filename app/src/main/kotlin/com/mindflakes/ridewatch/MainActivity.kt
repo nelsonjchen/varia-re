@@ -550,6 +550,8 @@ class MainActivity : Activity() {
             if (!RadarService.active) {
                 start(resumeMode())
                 return
+            } else {
+                startService(Intent(this, RadarService::class.java).setAction("connect_now"))
             }
         }
         if (prefs.getBoolean("paused", false) && !demo) showPaused()

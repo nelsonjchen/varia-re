@@ -103,3 +103,11 @@ read-back regardless of subscription success, request timeout/reconnect and samp
 age display/logging.36 tests/build/lint pass; Pixel install/capture pending.
 See reports/2026-09-28_battery_reliability.md. Need raw repeated successful reads
 before attributing unchanged percentages to firmware or claiming the symptom fixed.
+
+### 2026-09-29 all-day reconnect
+
+v0.12.0 uses Android auto-connect waiting after the initial direct attempt and
+stops rider-speed location requests while disconnected. Five policy tests added;
+Pixel radar-off waiting, Pause and reopen checks pass. Next hardware check: turn radar on, confirm
+subscriptions/live stream/fresh battery, out-of-range return, Bluetooth toggle,
+Pause cancellation and overnight power. See reports/2026-09-29_autoconnect.md.

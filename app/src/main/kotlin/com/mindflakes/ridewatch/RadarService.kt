@@ -54,6 +54,7 @@ class RadarService : Service() {
     private lateinit var vibration: RadarVibration
     private lateinit var rideSpeed: RideSpeedLocation
     private var rideLocationAllowed = false
+    private var radarConnected = false
     private var armed = false
     private var riding = false
     private val batteryStatus = BatteryStatus()
@@ -117,11 +118,16 @@ class RadarService : Service() {
                     }
 
                     override fun connected() {
+                        radarConnected = true
                         tracker.connected()
                         disconnect.connected()
+                        handler.removeCallbacks(tick)
+                        handler.post(tick)
                     }
 
                     override fun disconnected() {
+                        radarConnected = false
+                        rideSpeed.stop()
                         tracker.reset()
                         val speech = disconnect.disconnected()
                         if (speech != null) {
@@ -203,9 +209,13 @@ class RadarService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        if (action == "connect_now" && (riding || mode == "join")) {
+            if (riding) ble.requestConnection()
+            return START_STICKY
+        }
         mode =
-            (if (intent == null) prefs.getString("mode", "ride") else intent.getStringExtra("mode"))
-                ?: "ride"
+            (if (intent == null || action == "connect_now") prefs.getString("mode", "ride")
+            else intent.getStringExtra("mode")) ?: "ride"
         if (TESTING_LIFECYCLE && mode == "motion") mode = "ride"
         armed = mode == "motion" && action != "presence"
         if (action == "presence" && mode == "motion") mode = "ride"
@@ -245,6 +255,7 @@ class RadarService : Service() {
         lastNotificationText = null
         handler.removeCallbacks(tick)
         disconnect.reset()
+        radarConnected = false
         ble.stop()
         tracker.reset()
         batteryStatus.reset()
@@ -341,7 +352,8 @@ class RadarService : Service() {
             override fun run() {
                 val now = SystemClock.elapsedRealtime()
                 rideSpeed.setEnabled(
-                    rideLocationAllowed &&
+                    radarConnected &&
+                        rideLocationAllowed &&
                         prefs.getBoolean("speed", false) &&
                         prefs.getBoolean("speech", true) &&
                         checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -375,7 +387,7 @@ class RadarService : Service() {
                         .notify(1, notification(notificationText))
                     lastNotificationText = notificationText
                 }
-                handler.postDelayed(this, 500)
+                handler.postDelayed(this, if (!radarConnected && mode == "ride") 5000 else 500)
             }
         }
 
@@ -388,6 +400,7 @@ class RadarService : Service() {
             if (prefs.getBoolean("speed", false))
                 "\n" +
                     (if (mode == "join") "Car speed unavailable · host speed not shared"
+                    else if (!radarConnected) "Rider speed paused · waiting for radar"
                     else rideSpeed.description())
             else ""
         sendBroadcast(
@@ -411,6 +424,7 @@ class RadarService : Service() {
         groupGeneration++
         handler.removeCallbacksAndMessages(null)
         disconnect.reset()
+        radarConnected = false
         ble.stop()
         stopLocation()
         rideSpeed.stop()

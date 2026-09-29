@@ -347,3 +347,15 @@ valid reading arrived and marks it stale after3min; an unchanged but freshly rea
 percentage refreshes that timestamp. This supersedes the earlier fallback-only
 polling description. Raw battery diagnostics are available in RideWatchBle logs.
 The cause of the reported constant84% still needs physical verification.
+
+### All-day waiting (v0.12.0)
+
+Opening/Resume tries directly, then switches to Android-managed auto-connect if
+unavailable. An absent saved radar no longer triggers a direct attempt every30s.
+Bluetooth stack/setup errors still recover with backoff capped at2minutes; discovery
+and stream-stall watchdogs remain. Reopening while waiting requests an immediate
+attempt; opening while connected preserves the connection. Pause cancels waiting.
+
+High-accuracy rider-speed location updates stop while the radar is disconnected.
+The foreground notification remains; this does not enable boot/motion/presence
+wake or bypass force-stop. See [design and validation](../reports/2026-09-29_autoconnect.md).
