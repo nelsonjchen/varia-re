@@ -117,3 +117,10 @@ Pause cancellation and overnight power. See reports/2026-09-29_autoconnect.md.
 v0.12.1 migrates saved media minimum to100% and reapplies on explicit reopening
 and radar connection. Pixel offline. Next: install and verify max media step,
 manual override and Pause restoration on the physical output route.
+
+### 2026-10-03 audio reliability
+
+v0.12.2 adds urgent transient focus, bounded retry/cancel, anticipated output
+checks and actual-volume/mute warnings.48 tests/build/lint plus emulator checks
+pass; installed Pixel, actual media25/25. Next: music/podcast listening and real
+headphone route/volume-restriction checks. Report:2026-10-03_audio_reliability.md.

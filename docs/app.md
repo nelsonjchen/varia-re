@@ -370,3 +370,17 @@ adjust it afterward. Repeated raises retain the original restoration baseline;
 if volume was manually changed, the next raise uses that current level as its new
 baseline. Pause restores only if no subsequent override was observed. This remains
 shared media volume; Android output restrictions and routing still apply.
+
+### Audio focus, output and volume warnings (v0.12.2)
+
+Routine prompts request navigation-style lowering of competing music on the phone.
+Urgent, lost-radar and disconnect alerts request a brief interruption instead.
+Podcasts/other apps may handle focus differently. Urgent denied-focus requests get
+bounded retries and are canceled if the live urgent threat clears. Chime/speech
+phases reject old focus callbacks.
+
+The anticipated audio output is checked on device/route changes and before
+playback. A new output gets its own volume baseline; Pause restores only the
+current output. Actual below-target or muted media volume appears as a warning
+on screen, in the notification and in sound tests. Manual volume buttons still
+work afterward. [Validation and limits](../reports/2026-10-03_audio_reliability.md).

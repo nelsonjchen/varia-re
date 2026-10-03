@@ -4,16 +4,18 @@ Updated: 2026-10-03, America/Los_Angeles.
 
 ## Delivered
 
-- v0.12.1 built locally: saved media minimum migrates to100%, reapplied on opening
-  and radar connection. Pixel offline; installed version remains v0.12.0.
-  Volume restoration/override regression tests added; physical checks pending.
+- v0.12.2 installed Pixel October3:100% media target, routine ducking and urgent
+  transient focus, output checks and actual-volume/mute warnings.48 tests/build/
+  lint and emulator volume/focus checks pass; Pixel actual media25/25 observed.
+  Physical listening/headphone switching pending.
+  [Audio reliability](reports/2026-10-03_audio_reliability.md).
 
 - v0.12.0 adds Android-managed absent-radar waiting, bounded stack-error recovery,
   immediate reopen attempts and stops rider-speed location while disconnected.
   Installed Pixel September29; 41 tests/build/lint and radar-off waiting/Pause/
   reopen checks pass. Real return and overnight power pending. [Connection design](reports/2026-09-29_autoconnect.md).
 
-- Android **RideWatch v0.12.0** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
+- Android **RideWatch v0.12.2** app, Pixel 10 baseline (Android 16/API 36); [build/use guide](docs/app.md).
 - v0.11.0 adds count-change speech for multiple vehicles; lone approaches remain
   numbers-only. Installed on Pixel as v0.11.1 at 08:19 PDT September 27; road listening pending.
 - Test/preview actions now explain that no radar is needed and offer Pause & test

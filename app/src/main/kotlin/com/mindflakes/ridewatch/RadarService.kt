@@ -63,6 +63,7 @@ class RadarService : Service() {
 
     private var lastNotificationText: String? = null
     private var detail = "Ready"
+    private var volumeWarning: String? = null
     private var mode = "ride"
     private var locations: LocationManager? = null
     private var group: GroupLink? = null
@@ -105,8 +106,14 @@ class RadarService : Service() {
         super.onCreate()
         active = true
         createChannel(this)
-        audio = RadarAudio(this)
-        volume = RideVolume(this)
+        volume =
+            RideVolume(this).apply {
+                onWarning = { warning ->
+                    volumeWarning = warning
+                    broadcast(tracker.snapshot(SystemClock.elapsedRealtime()))
+                }
+            }
+        audio = RadarAudio(this, beforePlayback = { volume.verifyOutput() })
         vibration = RadarVibration(this)
         rideSpeed = RideSpeedLocation(this)
         ble =
@@ -353,6 +360,7 @@ class RadarService : Service() {
         object : Runnable {
             override fun run() {
                 val now = SystemClock.elapsedRealtime()
+                volume.verifyOutput(force = false)
                 rideSpeed.setEnabled(
                     radarConnected &&
                         rideLocationAllowed &&
@@ -367,6 +375,11 @@ class RadarService : Service() {
                         remote?.takeIf { now - remoteAt < 3000 }
                             ?: RadarTracker.Snapshot(RadarTracker.Health.STALE, emptyList(), -1)
                 if (mode == "host") group?.publish(snapshot)
+                if (
+                    snapshot.health != RadarTracker.Health.LIVE ||
+                        snapshot.targets.none { it.threat == 2 }
+                )
+                    audio.cancelPendingUrgent()
                 val speech =
                     alerts.update(
                         snapshot,
@@ -381,9 +394,12 @@ class RadarService : Service() {
                     audio.play(
                         if (prefs.getBoolean("tones", true)) tone else null,
                         if (prefs.getBoolean("speech", true)) speech else null,
+                        eventTone = tone,
                     )
                 broadcast(snapshot)
-                val notificationText = if (armed) detail else headline(snapshot)
+                val notificationText =
+                    volumeWarning?.let { "Alert volume · $it" }
+                        ?: if (armed) detail else headline(snapshot)
                 if (lastNotificationText != notificationText) {
                     getSystemService(NotificationManager::class.java)
                         .notify(1, notification(notificationText))
@@ -409,7 +425,10 @@ class RadarService : Service() {
             Intent(UPDATE)
                 .setPackage(packageName)
                 .putExtra("title", if (armed) "Ready for movement" else headline(snapshot))
-                .putExtra("detail", detail + speedDetail)
+                .putExtra(
+                    "detail",
+                    detail + speedDetail + (volumeWarning?.let { "\nAlert volume: $it" } ?: ""),
+                )
                 .putExtra("targets", targets)
                 .putExtra("meters", snapshot.targets.map { it.meters }.toIntArray())
                 .putExtra("threats", snapshot.targets.map { it.threat }.toIntArray())

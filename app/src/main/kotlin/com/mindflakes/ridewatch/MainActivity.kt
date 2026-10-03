@@ -367,7 +367,14 @@ class MainActivity : Activity() {
 
     private fun testTones() {
         if (offerPauseForTest("Pause & test", ::testTones)) return
-        val audio = testAudio ?: RadarAudio(this, automaticSpeech = false).also { testAudio = it }
+        val audio =
+            testAudio
+                ?: RadarAudio(
+                        this,
+                        automaticSpeech = false,
+                        beforePlayback = { testVolume?.verifyOutput() },
+                    )
+                    .also { testAudio = it }
         val volume = testVolume ?: RideVolume(this).also { testVolume = it }
         val vibration = testVibration ?: RadarVibration(this).also { testVibration = it }
         val panel =
@@ -381,6 +388,16 @@ class MainActivity : Activity() {
                     "Tap to replay. Tones and speech use media volume and your ride minimum; vibration follows your alert setting."
             }
         )
+        val volumeWarning =
+            TextView(this).apply {
+                setTextColor(Color.rgb(255, 104, 94))
+                visibility = View.GONE
+            }
+        panel.addView(volumeWarning)
+        volume.onWarning = { warning ->
+            volumeWarning.text = warning.orEmpty()
+            volumeWarning.visibility = if (warning == null) View.GONE else View.VISIBLE
+        }
         val choices =
             listOf(
                 "Connected · tone" to TonePolicy.Tone.CONNECTED,

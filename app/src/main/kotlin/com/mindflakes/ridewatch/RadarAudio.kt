@@ -6,11 +6,17 @@ import android.media.*
 import android.os.*
 import android.speech.tts.*
 import android.util.Log
+import com.mindflakes.ridewatch.core.AudioFocusPolicy
+import com.mindflakes.ridewatch.core.AudioFocusPolicy.Content
 import com.mindflakes.ridewatch.core.TonePolicy.Tone
 import java.util.Locale
 
 /** One bounded audio event: chime then speech. Disconnect announcements survive reconnect ticks. */
-class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) : AutoCloseable {
+class RadarAudio(
+    context: Context,
+    private val automaticSpeech: Boolean = true,
+    private val beforePlayback: () -> Unit = {},
+) : AutoCloseable {
     private val prefs = context.getSharedPreferences("ride", 0)
 
     // Priority speech is the direct disconnect/battery announcement.
@@ -25,17 +31,21 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
     private val handler = Handler(Looper.getMainLooper())
     private val callbacks = Handler(Looper.getMainLooper())
     private val manager = context.getSystemService(AudioManager::class.java)
-    private val attributes =
+    private val toneAttributes =
         AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
-    private val focus =
-        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-            .setAudioAttributes(attributes)
-            .setOnAudioFocusChangeListener({ if (it < 0) stop() }, handler)
+    private val speechAttributes =
+        AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
             .build()
-    private val pool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(attributes).build()
+    private val focusPolicy = AudioFocusPolicy()
+    private data class Focus(val ticket: AudioFocusPolicy.Request, val request: AudioFocusRequest)
+    private var activeFocus: Focus? = null
+    private var lastFocusTicket: AudioFocusPolicy.Request? = null
+    private val pool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(toneAttributes).build()
     private val sounds = mutableMapOf<Tone, Int>()
     private val loaded = mutableSetOf<Int>()
     private var tts: TextToSpeech? = null
@@ -45,6 +55,9 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
     private var generation = 0L
     private var critical = false
     private var speechPending = false
+    private var pauseOthers = false
+    private var urgentWarning = false
+    private var focusPending = false
 
     init {
         prefs.registerOnSharedPreferenceChangeListener(preferenceListener)
@@ -63,12 +76,7 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
                                 (tts?.setLanguage(Locale.US) ?: -1) >= 0
                         if (ready) {
                             tts?.setSpeechRate(1.4f)
-                            tts?.setAudioAttributes(
-                                AudioAttributes.Builder()
-                                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                    .build()
-                            )
+                            tts?.setAudioAttributes(speechAttributes)
                         }
                     }
                 }
@@ -98,17 +106,23 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
     }
 
     @JvmOverloads
-    fun play(tone: Tone?, speech: String?, priority: Boolean = false) {
+    fun play(tone: Tone?, speech: String?, priority: Boolean = false, eventTone: Tone? = tone) {
         val allowedSpeech = speech.takeIf { speechEnabled(priority) }
         if (closed || (critical && !priority)) return
         // Faster numeric refresh must not chop off a number already queued behind a chime.
         // Drop this refresh; the next tick supplies the current speed, with no speech backlog.
-        if (!priority && tone == null && allowedSpeech?.toIntOrNull() != null && speechPending)
+        if (
+            !priority && tone == null && allowedSpeech?.toIntOrNull() != null &&
+                (speechPending || (urgentWarning && focusPending))
+        )
             return
         stop()
         if (tone == null && allowedSpeech == null) return
         critical = priority
         speechPending = allowedSpeech != null
+        pauseOthers = priority || eventTone == Tone.URGENT || eventTone == Tone.LOST
+        urgentWarning = eventTone == Tone.URGENT
+        focusPending = true
         val token = generation
         val deadline = SystemClock.elapsedRealtime() + 2000
         begin(token, tone, allowedSpeech, deadline)
@@ -122,10 +136,9 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
             handler.postDelayed({ begin(token, tone, speech, deadline) }, 50)
             return
         }
-        val focusResult = manager.requestAudioFocus(focus)
-        Log.d("RideWatchAudio", "focus=$focusResult, tone=$tone, priority=$critical")
-        if (focusResult != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            if (critical && SystemClock.elapsedRealtime() < deadline)
+        val content = if (id != null && id in loaded) Content.SONIFICATION else Content.SPEECH
+        if (!requestFocus(token, content)) {
+            if (mayRetryFocus(deadline))
                 handler.postDelayed({ begin(token, tone, speech, deadline) }, 200)
             else {
                 Log.w("RideWatchAudio", "Audio focus unavailable; event could not play")
@@ -133,8 +146,10 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
             }
             return
         }
+        focusPending = false
         var delay = 0L
         if (id != null && id in loaded) {
+            beforePlayback()
             stream = pool.play(id, 1f, 1f, 1, 0, 1f)
             Log.d("RideWatchAudio", "stream=$stream")
             if (stream != 0)
@@ -145,10 +160,13 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
                         else -> 500
                     }
         }
-        handler.postDelayed({ speak(token, speech, SystemClock.elapsedRealtime() + 3000) }, delay)
+        handler.postDelayed(
+            { speak(token, speech, SystemClock.elapsedRealtime() + 3000, deadline) },
+            delay,
+        )
     }
 
-    private fun speak(token: Long, speech: String?, deadline: Long) {
+    private fun speak(token: Long, speech: String?, deadline: Long, focusDeadline: Long) {
         if (closed || token != generation) return
         if (speech == null || !speechEnabled()) {
             stop()
@@ -156,13 +174,24 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
         }
         if (!ready) {
             if (SystemClock.elapsedRealtime() < deadline)
-                handler.postDelayed({ speak(token, speech, deadline) }, 100)
+                handler.postDelayed({ speak(token, speech, deadline, focusDeadline) }, 100)
             else {
                 Log.w("RideWatchAudio", "Speech engine unavailable")
                 stop()
             }
             return
         }
+        // Match the focus request to speech too; an abandoned chime request cannot stop this phase.
+        if (!requestFocus(token, Content.SPEECH)) {
+            if (mayRetryFocus(focusDeadline))
+                handler.postDelayed({ speak(token, speech, deadline, focusDeadline) }, 200)
+            else {
+                Log.w("RideWatchAudio", "Audio focus unavailable; speech could not play")
+                stop()
+            }
+            return
+        }
+        beforePlayback()
         if (
             tts?.speak(speech, TextToSpeech.QUEUE_FLUSH, null, token.toString()) ==
                 TextToSpeech.ERROR
@@ -171,15 +200,73 @@ class RadarAudio(context: Context, private val automaticSpeech: Boolean = true) 
         else handler.postDelayed({ if (token == generation) stop() }, 10000)
     }
 
+    private fun requestFocus(token: Long, content: Content): Boolean {
+        activeFocus?.let {
+            if (it.ticket.content == content && focusPolicy.isCurrent(it.ticket, token)) return true
+        }
+        releaseFocus()
+        val ticket = focusPolicy.request(token, pauseOthers, content)
+        lastFocusTicket = ticket
+        val request =
+            AudioFocusRequest.Builder(
+                    if (ticket.gain == AudioFocusPolicy.Gain.TRANSIENT)
+                        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+                    else AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+                )
+                .setAudioAttributes(if (content == Content.SPEECH) speechAttributes else toneAttributes)
+                .setWillPauseWhenDucked(content == Content.SPEECH)
+                .setOnAudioFocusChangeListener(
+                    {
+                        if (
+                            it < 0 && activeFocus?.ticket == ticket &&
+                                focusPolicy.isCurrent(ticket, generation)
+                        ) stop()
+                    },
+                    handler,
+                )
+                .build()
+        val focusResult = manager.requestAudioFocus(request)
+        Log.d("RideWatchAudio", "focus=$focusResult, gain=${ticket.gain}, content=$content")
+        if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            activeFocus = Focus(ticket, request)
+            return true
+        }
+        // Keep the ticket only for the bounded-retry decision, never as a granted lease.
+        manager.abandonAudioFocusRequest(request)
+        return false
+    }
+
+    private fun mayRetryFocus(deadline: Long): Boolean =
+        // The failed request remains current until its retry, cancellation or deadline.
+        lastFocusTicket?.let {
+            focusPolicy.mayRetry(it, SystemClock.elapsedRealtime(), deadline)
+        } ?: false
+
+    private fun releaseFocus() {
+        focusPolicy.release()
+        lastFocusTicket = null
+        val previous = activeFocus
+        activeFocus = null
+        previous?.let { manager.abandonAudioFocusRequest(it.request) }
+    }
+
+    /** The service calls this as soon as the current snapshot no longer has a live urgent threat. */
+    fun cancelPendingUrgent() {
+        if (urgentWarning && !critical) stop()
+    }
+
     fun stop() {
         generation++
         critical = false
         speechPending = false
+        pauseOthers = false
+        urgentWarning = false
+        focusPending = false
         handler.removeCallbacksAndMessages(null)
         if (stream != 0) pool.stop(stream)
         stream = 0
         tts?.stop()
-        manager.abandonAudioFocusRequest(focus)
+        releaseFocus()
     }
 
     override fun close() {
