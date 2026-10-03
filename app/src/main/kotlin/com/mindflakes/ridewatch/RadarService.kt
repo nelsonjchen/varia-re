@@ -118,6 +118,7 @@ class RadarService : Service() {
                     }
 
                     override fun connected() {
+                        volume.start(reapply = true)
                         radarConnected = true
                         tracker.connected()
                         disconnect.connected()
@@ -210,6 +211,7 @@ class RadarService : Service() {
             return START_NOT_STICKY
         }
         if (action == "connect_now" && (riding || mode == "join")) {
+            volume.start(reapply = true)
             if (riding) ble.requestConnection()
             return START_STICKY
         }

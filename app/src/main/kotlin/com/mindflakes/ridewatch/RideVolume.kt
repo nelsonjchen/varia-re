@@ -26,44 +26,67 @@ class RideVolume(private val context: Context) : AutoCloseable {
             }
         }
 
-    fun start() {
-        if (started) return
+    companion object {
+        fun migrateSettings(context: Context) {
+            val prefs = context.getSharedPreferences("ride", 0)
+            if (!prefs.getBoolean("full_volume_v1", false))
+                prefs
+                    .edit()
+                    .putInt("ride_volume", 100)
+                    .putBoolean("auto_volume", true)
+                    .putBoolean("full_volume_v1", true)
+                    .commit()
+        }
+    }
+
+    fun start(reapply: Boolean = false) {
+        if (started) {
+            if (reapply) applyMinimum()
+            return
+        }
+        migrateSettings(context)
         started = true
         val boot = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
         val current = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        // Recover a killed service's lease, but never carry volume ownership across reboot.
-        if (ledger.getInt("boot", -2) == boot && ledger.contains("original")) {
-            policy =
+        // Recover the baseline only within the same boot.
+        policy =
+            if (ledger.getInt("boot", -2) == boot && ledger.contains("original")) {
                 RideVolumePolicy(
                     ledger.getInt("original", current),
                     ledger.getInt("raised", current),
                     ledger.getBoolean("overridden", false),
                 )
-            policy!!.observe(current)
-        } else {
-            ledger.edit().clear().commit()
-            val target =
-                if (settings.getBoolean("auto_volume", true))
-                    maxOf(
-                        current,
-                        RideVolumePolicy.minimum(
-                            manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-                            settings.getInt("ride_volume", 80),
-                        ),
-                    )
-                else current
-            policy = RideVolumePolicy(current, target)
-            // Persist before changing a global setting so process death cannot lose the baseline.
-            ledger
-                .edit()
-                .putInt("boot", boot)
-                .putInt("original", current)
-                .putInt("raised", target)
-                .commit()
-            if (target > current) setVolume(target)
-            policy!!.observe(manager.getStreamVolume(AudioManager.STREAM_MUSIC))
-        }
+            } else RideVolumePolicy(current, current)
+        applyMinimum()
         context.contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, observer)
+    }
+
+    private fun applyMinimum() {
+        val current = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val minimum =
+            if (settings.getBoolean("auto_volume", true))
+                RideVolumePolicy.minimum(
+                    manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                    settings.getInt("ride_volume", 100),
+                )
+            else current
+        val next = policy!!.renewed(current, minimum)
+        policy = next
+        // Save before changing volume; preserve the baseline across repeated connections.
+        ledger
+            .edit()
+            .clear()
+            .putInt(
+                "boot",
+                Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1),
+            )
+            .putInt("original", next.original)
+            .putInt("raised", next.raised)
+            .putBoolean("overridden", false)
+            .commit()
+        if (next.raised > current) setVolume(next.raised)
+        next.observe(manager.getStreamVolume(AudioManager.STREAM_MUSIC))
+        if (next.overridden) ledger.edit().putBoolean("overridden", true).apply()
     }
 
     private fun setVolume(value: Int) {

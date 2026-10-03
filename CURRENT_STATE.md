@@ -1,8 +1,12 @@
 # Current state
 
-Updated: 2026-09-29, America/Los_Angeles.
+Updated: 2026-10-03, America/Los_Angeles.
 
 ## Delivered
+
+- v0.12.1 built locally: saved media minimum migrates to100%, reapplied on opening
+  and radar connection. Pixel offline; installed version remains v0.12.0.
+  Volume restoration/override regression tests added; physical checks pending.
 
 - v0.12.0 adds Android-managed absent-radar waiting, bounded stack-error recovery,
   immediate reopen attempts and stops rider-speed location while disconnected.

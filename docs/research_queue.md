@@ -111,3 +111,9 @@ stops rider-speed location requests while disconnected. Five policy tests added;
 Pixel radar-off waiting, Pause and reopen checks pass. Next hardware check: turn radar on, confirm
 subscriptions/live stream/fresh battery, out-of-range return, Bluetooth toggle,
 Pause cancellation and overnight power. See reports/2026-09-29_autoconnect.md.
+
+### 2026-10-03 full volume
+
+v0.12.1 migrates saved media minimum to100% and reapplies on explicit reopening
+and radar connection. Pixel offline. Next: install and verify max media step,
+manual override and Pause restoration on the physical output route.

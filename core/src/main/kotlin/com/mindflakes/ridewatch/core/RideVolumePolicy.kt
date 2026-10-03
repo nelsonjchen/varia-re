@@ -6,6 +6,12 @@ class RideVolumePolicy(val original: Int, val raised: Int, var overridden: Boole
         if (current != raised) overridden = true
     }
 
+    fun renewed(current: Int, minimum: Int): RideVolumePolicy =
+        RideVolumePolicy(
+            if (overridden || current != raised) current else original,
+            maxOf(current, minimum),
+        )
+
     fun restore(current: Int): Int? {
         observe(current)
         return if (!overridden && raised > original) original else null

@@ -43,6 +43,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(saved: Bundle?) {
         super.onCreate(saved)
+        RideVolume.migrateSettings(this)
         prefs = getSharedPreferences("ride", 0)
         volumeControlStream = AudioManager.STREAM_MUSIC
         autoStartAttempted = saved?.getBoolean("autoStartAttempted", false) ?: false
@@ -267,7 +268,7 @@ class MainActivity : Activity() {
         )
         val automatic =
             Switch(this).apply {
-                text = "Raise volume when starting a ride"
+                text = "Raise volume on opening or radar connection"
                 minHeight = dp(56)
                 isChecked = prefs.getBoolean("auto_volume", true)
             }
@@ -276,7 +277,7 @@ class MainActivity : Activity() {
         val slider =
             SeekBar(this).apply {
                 max = 100
-                progress = prefs.getInt("ride_volume", 80)
+                progress = prefs.getInt("ride_volume", 100)
                 minHeight = dp(48)
                 contentDescription = "Minimum ride media volume"
                 isEnabled = automatic.isChecked
@@ -308,7 +309,7 @@ class MainActivity : Activity() {
         panel.addView(
             TextView(this).apply {
                 text =
-                    "Applies on the next ride or sound test. Pause restores the previous volume unless you adjusted it. Do Not Disturb and connected audio devices still apply."
+                    "Applies when opening the app, connecting the radar, or starting a sound test. Pause restores the previous volume unless you adjusted it. Do Not Disturb and connected audio devices still apply."
             }
         )
         AlertDialog.Builder(this)

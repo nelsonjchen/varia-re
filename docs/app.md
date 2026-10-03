@@ -359,3 +359,14 @@ attempt; opening while connected preserves the connection. Pause cancels waiting
 High-accuracy rider-speed location updates stop while the radar is disconnected.
 The foreground notification remains; this does not enable boot/motion/presence
 wake or bypass force-stop. See [design and validation](../reports/2026-09-29_autoconnect.md).
+
+### Full media volume (v0.12.1)
+
+Per user request, this update migrates the saved minimum to100% and enables
+automatic volume once, including existing installations. Future manual preference
+changes remain available. Opening an active app and each radar connection reapply
+the minimum, as do a new monitoring session or sound test. Volume buttons can still
+adjust it afterward. Repeated raises retain the original restoration baseline;
+if volume was manually changed, the next raise uses that current level as its new
+baseline. Pause restores only if no subsequent override was observed. This remains
+shared media volume; Android output restrictions and routing still apply.
