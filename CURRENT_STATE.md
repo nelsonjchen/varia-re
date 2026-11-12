@@ -93,3 +93,11 @@ Read `docs/app.md`, the protocol report, and newest journal entry. The next usef
 step is RVR315 capture and lifecycle/power measurements when hardware becomes
 available. Improve diagnostics/low-power wake based on those results, not guesses.
 Raw APK, decompilation, captures, tools and external checkouts remain ignored.
+
+## Publication follow-up — 2026-11-11
+
+The owner authorized publishing the audited source repository. README build and
+installation status was refreshed for v0.12.2. The disclosure review is recorded
+in [the publication audit](reports/2026-11-11_publication-audit.md). No app code,
+permissions, device settings or test-validation claims were changed for this
+publication work. See today's journal for publication outcome.
